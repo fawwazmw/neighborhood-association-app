@@ -1,18 +1,21 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Layout from './components/Layout';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import ResidentList from './pages/ResidentList';
-import ResidentForm from './pages/ResidentForm';
-import HouseList from './pages/HouseList';
-import HouseDetail from './pages/HouseDetail';
-import HouseForm from './pages/HouseForm';
-import PaymentList from './pages/PaymentList';
-import PaymentForm from './pages/PaymentForm';
-import ExpenseList from './pages/ExpenseList';
-import Report from './pages/Report';
-import NotFound from './pages/NotFound';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
+import Layout from '@/components/Layout';
+import Login from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import ResidentList from '@/pages/ResidentList';
+import ResidentForm from '@/pages/ResidentForm';
+import HouseList from '@/pages/HouseList';
+import HouseDetail from '@/pages/HouseDetail';
+import HouseForm from '@/pages/HouseForm';
+import PaymentList from '@/pages/PaymentList';
+import PaymentForm from '@/pages/PaymentForm';
+import ExpenseList from '@/pages/ExpenseList';
+import Report from '@/pages/Report';
+import NotFound from '@/pages/NotFound';
 
 /**
  * Route guard — redirects to /login if not authenticated.
@@ -22,10 +25,10 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">Loading...</p>
+          <div className="size-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -80,11 +83,16 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router>
+    <ThemeProvider>
       <AuthProvider>
-        <AppRoutes />
+        <TooltipProvider>
+          <Router>
+            <AppRoutes />
+            <Toaster richColors position="top-right" />
+          </Router>
+        </TooltipProvider>
       </AuthProvider>
-    </Router>
+    </ThemeProvider>
   );
 }
 

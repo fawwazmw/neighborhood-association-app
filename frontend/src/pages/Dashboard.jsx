@@ -10,7 +10,24 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { houseApi, paymentApi, reportApi } from '../lib/api';
+import { houseApi, paymentApi, reportApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat('en-US', {
@@ -24,38 +41,39 @@ const MONTH_NAMES = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-function SummaryCard({ icon: Icon, label, value, color, loading }) {
-  const colorMap = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    amber: 'bg-amber-50 text-amber-600',
-  };
-
+// ─── Summary Card ──────────────────────────────────────────────────────────────
+function SummaryCard({ icon: Icon, label, value, iconClassName, loading }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${colorMap[color]}`}>
-          <Icon size={24} />
+    <Card>
+      <CardContent className="pt-1">
+        <div className="flex items-center gap-4">
+          <div className={cn('p-3 rounded-lg', iconClassName)}>
+            <Icon size={24} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-muted-foreground truncate">
+              {label}
+            </p>
+            {loading ? (
+              <div className="h-7 w-24 bg-muted rounded animate-pulse mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground truncate">
+                {value}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-500 truncate">{label}</p>
-          {loading ? (
-            <div className="h-7 w-24 bg-gray-200 rounded animate-pulse mt-1" />
-          ) : (
-            <p className="text-2xl font-bold text-gray-900 truncate">{value}</p>
-          )}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
+// ─── Chart Tooltip ─────────────────────────────────────────────────────────────
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-      <p className="text-sm font-semibold text-gray-700 mb-1">{label}</p>
+    <div className="rounded-lg border bg-card p-3 shadow-lg">
+      <p className="text-sm font-semibold text-card-foreground mb-1">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} className="text-sm" style={{ color: entry.color }}>
           {entry.name}: {formatRupiah(entry.value)}
@@ -65,28 +83,7 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const map = {
-    paid: 'bg-green-100 text-green-700',
-    unpaid: 'bg-red-100 text-red-700',
-  };
-
-  const labelMap = {
-    paid: 'Paid',
-    unpaid: 'Unpaid',
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        map[status] || 'bg-gray-100 text-gray-700'
-      }`}
-    >
-      {labelMap[status] || status}
-    </span>
-  );
-}
-
+// ─── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [houseData, setHouseData] = useState([]);
@@ -165,8 +162,8 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Neighborhood administration data summary
         </p>
       </div>
@@ -177,155 +174,168 @@ export default function Dashboard() {
           icon={Home}
           label="Total Houses"
           value={totalHouses}
-          color="blue"
+          iconClassName="bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
           loading={loading}
         />
         <SummaryCard
           icon={Building2}
           label="Occupied Houses"
           value={occupiedHouses}
-          color="green"
+          iconClassName="bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400"
           loading={loading}
         />
         <SummaryCard
           icon={Users}
           label="Total Residents"
           value={totalResidents}
-          color="purple"
+          iconClassName="bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
           loading={loading}
         />
         <SummaryCard
           icon={Wallet}
           label="This Month Balance"
           value={formatRupiah(thisMonthBalance)}
-          color="amber"
+          iconClassName="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
           loading={loading}
         />
       </div>
 
       {/* Financial Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Income vs Expenses {new Date().getFullYear()}
-        </h2>
-        {loading ? (
-          <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: '#6b7280' }}
-                axisLine={{ stroke: '#d1d5db' }}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#6b7280' }}
-                axisLine={{ stroke: '#d1d5db' }}
-                tickFormatter={(value) =>
-                  value >= 1_000_000
-                    ? `${(value / 1_000_000).toFixed(0)}M`
-                    : value >= 1_000
-                    ? `${(value / 1_000).toFixed(0)}K`
-                    : value
-                }
-              />
-              <Tooltip content={<ChartTooltip />} />
-              <Legend
-                wrapperStyle={{ fontSize: 13 }}
-                iconType="circle"
-              />
-              <Bar
-                dataKey="income"
-                name="Income"
-                fill="#22c55e"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={40}
-              />
-              <Bar
-                dataKey="expenses"
-                name="Expenses"
-                fill="#ef4444"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={40}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Income vs Expenses {new Date().getFullYear()}
+          </CardTitle>
+          <CardDescription>
+            Monthly financial overview for the current year
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-80 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  axisLine={{ stroke: '#d1d5db' }}
+                  tickFormatter={(value) =>
+                    value >= 1_000_000
+                      ? `${(value / 1_000_000).toFixed(0)}M`
+                      : value >= 1_000
+                      ? `${(value / 1_000).toFixed(0)}K`
+                      : value
+                  }
+                />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 13 }} iconType="circle" />
+                <Bar
+                  dataKey="income"
+                  name="Income"
+                  fill="#22c55e"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+                <Bar
+                  dataKey="expenses"
+                  name="Expenses"
+                  fill="#ef4444"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Payments Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Recent Payments
-          </h2>
-        </div>
-        {loading ? (
-          <div className="p-6 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
-            ))}
-          </div>
-        ) : recentPayments.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">
-            <p>No payment data yet.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left">
-                  <th className="px-5 py-3 font-semibold text-gray-600">House</th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">Resident</th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">Fee Type</th>
-                  <th className="px-5 py-3 font-semibold text-gray-600 text-right">Amount</th>
-                  <th className="px-5 py-3 font-semibold text-gray-600 text-center">Status</th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">Payment Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Payments</CardTitle>
+          <CardDescription>
+            Latest payment transactions recorded
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+              ))}
+            </div>
+          ) : recentPayments.length === 0 ? (
+            <div className="py-10 text-center text-muted-foreground">
+              <p>No payment data yet.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>House</TableHead>
+                  <TableHead>Resident</TableHead>
+                  <TableHead>Fee Type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead>Payment Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {recentPayments.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-3 text-gray-900 font-medium">
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-medium">
                       {payment.house_resident?.house?.house_number || '-'}
-                    </td>
-                    <td className="px-5 py-3 text-gray-700">
+                    </TableCell>
+                    <TableCell>
                       {payment.house_resident?.resident?.full_name || '-'}
-                    </td>
-                    <td className="px-5 py-3 text-gray-700 capitalize">
+                    </TableCell>
+                    <TableCell className="capitalize">
                       {payment.fee_type || '-'}
-                    </td>
-                    <td className="px-5 py-3 text-gray-900 font-medium text-right">
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
                       {formatRupiah(payment.amount || 0)}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <StatusBadge status={payment.status || 'unpaid'} />
-                    </td>
-                    <td className="px-5 py-3 text-gray-700">
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={payment.status === 'paid' ? 'default' : 'destructive'}
+                        className={cn(
+                          payment.status === 'paid' &&
+                            'bg-green-600 text-white hover:bg-green-700'
+                        )}
+                      >
+                        {payment.status === 'paid' ? 'Paid' : 'Unpaid'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       {payment.payment_date
-                        ? new Date(payment.payment_date).toLocaleDateString('en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
+                        ? new Date(payment.payment_date).toLocaleDateString(
+                            'en-US',
+                            {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            }
+                          )
                         : '-'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

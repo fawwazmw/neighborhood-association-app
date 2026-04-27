@@ -63,12 +63,25 @@ export default function Login() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Sign In</CardTitle>
             <CardDescription>
-              Enter your credentials to access the dashboard
+              Use the credentials below to sign in
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Credentials hint */}
+              <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Demo Credentials</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <code className="text-foreground font-mono text-xs bg-muted px-1.5 py-0.5 rounded">admin@neighborhood.com</code>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Password</span>
+                  <code className="text-foreground font-mono text-xs bg-muted px-1.5 py-0.5 rounded">password</code>
+                </div>
+              </div>
+
               {/* Error Message */}
               {error && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">

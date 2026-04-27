@@ -1,26 +1,67 @@
 # Neighborhood Administration System
 
-A web application for managing neighborhood fee payments and expenses in a residential community.
+A web application for managing neighborhood (RT) administration — resident data, house management, monthly fee payments, expenses, and financial reports.
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Backend | PHP 8.x - Laravel 13 |
-| Frontend | React 19 + Vite |
-| Database | MySQL 8.0 |
-| Styling | Tailwind CSS v4 |
-| Chart | Recharts |
-| Icons | Lucide React |
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Backend | Laravel (PHP) | 13.x |
+| Frontend | React (JavaScript) | 19.x |
+| Build Tool | Vite | 8.x |
+| Database | MySQL | 8.0 |
+| UI Components | shadcn/ui (Radix UI) | latest |
+| Styling | Tailwind CSS | 4.x |
+| Charts | Recharts | 3.x |
+| Icons | Lucide React | latest |
+| Authentication | Laravel Sanctum | 4.x |
+| Backend Testing | Pest PHP | 4.x |
+| Frontend Testing | Vitest + Testing Library | 4.x |
 
 ## Features
 
-- **Authentication** - Secure login with Laravel Sanctum (session-based SPA authentication)
-- **Resident Management** - CRUD resident data with ID photo upload
-- **House Management** - CRUD house data, assign/remove residents, occupancy history
-- **Payment Management** - Record monthly fees (security IDR 100,000 & cleaning IDR 15,000), single & bulk payments
-- **Expense Management** - Record neighborhood expenses (security guard salary, electricity tokens, repairs, etc.)
-- **Financial Reports** - Income vs expenses chart, monthly details, balance
+### Authentication
+- Secure login with Laravel Sanctum (session-based SPA authentication)
+- All API routes protected behind `auth:sanctum` middleware
+- Session-based cookie authentication (no tokens)
+
+### Resident Management
+- CRUD resident data (full name, phone number, resident status, marital status)
+- Upload and manage ID photos (KTP)
+- Resident status: **Permanent** or **Contract**
+- Real-time search by name
+- Column filters (status, marital status, house assignment)
+
+### House Management
+- CRUD house data (house number, address)
+- Assign / remove residents to/from houses
+- Occupancy status: **Occupied** or **Vacant**
+- Full resident history per house (who lived there and when)
+- Payment history per house
+
+### Payment Management
+- Record monthly fee payments:
+  - **Security fee**: IDR 100,000/month
+  - **Cleaning fee**: IDR 15,000/month
+- Single payment or bulk payment (multiple months at once)
+- Auto-generate monthly bills for all active residents
+- Mark payments as paid/unpaid
+- Filter by year, month, fee type, status
+
+### Expense Management
+- Record neighborhood expenses (security guard salary, electricity, repairs, etc.)
+- Recurring vs one-time expense tracking
+- Filter by year, month, category
+
+### Financial Reports
+- Yearly summary with income vs expenses bar chart
+- Monthly detail breakdown (income items + expense items)
+- Balance calculation per month
+- Year selector for historical data
+
+### Dark Mode
+- Full dark/light theme toggle
+- Persisted in localStorage
 
 ## Default Login Credentials
 
@@ -32,16 +73,65 @@ A web application for managing neighborhood fee payments and expenses in a resid
 ## Project Structure
 
 ```
-neighborhood-admin/
-├── backend/          # Laravel REST API
-├── frontend/         # React + Vite SPA
-├── ERD.md            # Entity Relationship Diagram
-└── README.md         # Installation Guide (this file)
+neighborhood-association-app/
+├── backend/                    # Laravel REST API
+│   ├── app/
+│   │   ├── Http/Controllers/Api/
+│   │   │   ├── AuthController.php
+│   │   │   ├── ResidentController.php
+│   │   │   ├── HouseController.php
+│   │   │   ├── PaymentController.php
+│   │   │   ├── ExpenseController.php
+│   │   │   └── ReportController.php
+│   │   └── Models/
+│   │       ├── User.php
+│   │       ├── Resident.php
+│   │       ├── House.php
+│   │       ├── HouseResident.php
+│   │       ├── Payment.php
+│   │       └── Expense.php
+│   ├── database/
+│   │   ├── migrations/
+│   │   └── seeders/
+│   │       └── DatabaseSeeder.php
+│   ├── routes/
+│   │   └── api.php
+│   └── tests/
+│       └── Feature/            # Pest PHP tests
+├── frontend/                   # React + Vite SPA
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/             # shadcn/ui components
+│   │   │   └── Layout.jsx
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.jsx
+│   │   │   └── ThemeContext.jsx
+│   │   ├── lib/
+│   │   │   └── api.js
+│   │   ├── pages/
+│   │   │   ├── Login.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── ResidentList.jsx
+│   │   │   ├── ResidentForm.jsx
+│   │   │   ├── HouseList.jsx
+│   │   │   ├── HouseDetail.jsx
+│   │   │   ├── HouseForm.jsx
+│   │   │   ├── PaymentList.jsx
+│   │   │   ├── PaymentForm.jsx
+│   │   │   ├── ExpenseList.jsx
+│   │   │   ├── Report.jsx
+│   │   │   └── NotFound.jsx
+│   │   └── test/               # Vitest tests
+│   └── vitest.config.js
+├── ERD.md                      # Entity Relationship Diagram
+└── README.md                   # This file
 ```
 
 ---
 
 ## Installation Guide
+
+> **Important:** This guide must be followed step by step. Skipping any step may cause the application to fail.
 
 ### Prerequisites
 
@@ -56,13 +146,13 @@ Make sure the following are installed on your computer:
 ### Step 1: Clone Repository
 
 ```bash
-git clone <repository-url> neighborhood-admin
-cd neighborhood-admin
+git clone <repository-url> neighborhood-association-app
+cd neighborhood-association-app
 ```
 
-### Step 2: Setup Database
+### Step 2: Create MySQL Database
 
-1. Create a new MySQL database:
+Open your MySQL client and create a new database:
 
 ```sql
 CREATE DATABASE neighborhood_admin;
@@ -74,7 +164,7 @@ CREATE DATABASE neighborhood_admin;
 # Navigate to backend directory
 cd backend
 
-# Install dependencies
+# Install PHP dependencies
 composer install
 
 # Copy environment file
@@ -84,7 +174,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-2. Edit the `.env` file and configure the database:
+Edit the `.env` file and set your database credentials:
 
 ```env
 DB_CONNECTION=mysql
@@ -95,99 +185,109 @@ DB_USERNAME=root
 DB_PASSWORD=your_password
 ```
 
-3. Run migrations and seeder:
+Run database migrations and seed initial data:
 
 ```bash
-# Run database migrations
+# Run migrations (creates all tables)
 php artisan migrate
 
-# Run seeder for initial data (20 houses, 18 residents, payment & expense data)
+# Seed the database with sample data
 php artisan db:seed
 
-# Create symbolic link for storage (ID photo uploads)
+# Create storage symlink (required for ID photo uploads)
 php artisan storage:link
 ```
 
-4. Start the backend server:
+After seeding, the terminal will display:
+
+```
+╔═══════════════════════════════════════════════════╗
+║  Neighborhood Admin Seeder Complete!              ║
+╠═══════════════════════════════════════════════════╣
+║  Houses         : 20                              ║
+║  Residents      : 18  (15 permanent, 3 contract)  ║
+║  Assignments    : 18                              ║
+║  Payments       : 834 (534 paid, 300 unpaid)      ║
+║  Expenses       : 39                              ║
+╠═══════════════════════════════════════════════════╣
+║  Admin Login:                                     ║
+║    Email    : admin@neighborhood.com              ║
+║    Password : password                            ║
+╚═══════════════════════════════════════════════════╝
+```
+
+Start the backend server:
 
 ```bash
 php artisan serve --port=8000
 ```
 
-Backend will run at `http://localhost:8000`
+> Backend will run at `http://localhost:8000`
 
 ### Step 4: Setup Frontend (React)
 
-Open a new terminal:
+Open a **new terminal** (keep the backend running):
 
 ```bash
-# Navigate to frontend directory
+# Navigate to frontend directory (from project root)
 cd frontend
 
-# Install dependencies
+# Install JavaScript dependencies
 npm install
 ```
 
-Edit `vite.config.js` if the backend port is different (default: 8000):
-
-```javascript
-server: {
-  port: 3000,
-  proxy: {
-    '/api': {
-      target: 'http://localhost:8000',  // Adjust to match backend port
-      changeOrigin: true,
-    },
-    '/storage': {
-      target: 'http://localhost:8000',
-      changeOrigin: true,
-    },
-  },
-},
-```
-
-Start the frontend server:
+Start the frontend development server:
 
 ```bash
 npm run dev
 ```
 
-Frontend will run at `http://localhost:3000`
+> Frontend will run at `http://localhost:3000`
 
 ### Step 5: Access the Application
 
-Open your browser and navigate to: **http://localhost:3000**
+1. Open your browser and go to: **http://localhost:3000**
+2. You will see the login page
+3. Enter the credentials:
+   - **Email:** `admin@neighborhood.com`
+   - **Password:** `password`
+4. Click **Sign In** to access the dashboard
 
 ---
 
 ## Seed Data
 
-After running `php artisan db:seed`, the database will be populated with:
+After running `php artisan db:seed`, the database is populated with realistic sample data:
 
 | Data | Count | Description |
 |------|-------|-------------|
-| Houses | 20 | A1-A10, B1-B10 |
-| Permanent Residents | 15 | Occupying houses A1-A10, B1-B5 |
-| Contract Residents | 3 | Occupying houses B6-B8 |
-| Vacant Houses | 2 | B9, B10 |
-| Payments | 402 | 2024 data (Jan-Oct paid, Nov-Dec unpaid) |
-| Expenses | 28 | Security guard salary, electricity tokens, repairs |
+| Admin User | 1 | Login account for the application |
+| Houses | 20 | A1–A10, B1–B10 |
+| Permanent Residents | 15 | Occupying houses A1–A10, B1–B5 |
+| Contract Residents | 3 | Occupying houses B6–B8 |
+| Vacant Houses | 2 | B9, B10 (no resident assigned) |
+| Payments | 834 | Current year + previous year data |
+| Expenses | 39 | Security salary, electricity, repairs |
+
+> The seeder generates data relative to the current date, so charts and reports always show relevant data.
+
+---
 
 ## API Endpoints
 
 ### Authentication
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
 | POST | `/api/login` | Login (email + password) | No |
 | POST | `/api/logout` | Logout (invalidate session) | Yes |
-| GET | `/api/user` | Get authenticated user | Yes |
+| GET | `/api/user` | Get authenticated user info | Yes |
 
-> All other endpoints below require authentication (`auth:sanctum` middleware).
+> All endpoints below require authentication (`auth:sanctum` middleware).
 
 ### Residents
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/residents` | List all residents (paginated) |
+| GET | `/api/residents` | List all residents (paginated, searchable) |
 | POST | `/api/residents` | Create a new resident |
 | GET | `/api/residents/{id}` | Get resident details |
 | PUT | `/api/residents/{id}` | Update a resident |
@@ -196,13 +296,13 @@ After running `php artisan db:seed`, the database will be populated with:
 ### Houses
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/houses` | List all houses |
+| GET | `/api/houses` | List all houses with occupancy status |
 | POST | `/api/houses` | Create a new house |
-| GET | `/api/houses/{id}` | Get house details + history |
+| GET | `/api/houses/{id}` | Get house details + resident & payment history |
 | PUT | `/api/houses/{id}` | Update a house |
 | POST | `/api/houses/{id}/assign-resident` | Assign a resident to a house |
-| POST | `/api/houses/{id}/remove-resident` | Remove a resident from a house |
-| GET | `/api/houses/{id}/history` | Get house resident history |
+| POST | `/api/houses/{id}/remove-resident` | Remove current resident from a house |
+| GET | `/api/houses/{id}/history` | Get resident history for a house |
 
 ### Payments
 | Method | Endpoint | Description |
@@ -210,8 +310,9 @@ After running `php artisan db:seed`, the database will be populated with:
 | GET | `/api/payments` | List payments (filter: month, year, fee_type, status) |
 | POST | `/api/payments` | Create a single payment |
 | POST | `/api/payments-bulk` | Create bulk payments (month range) |
-| POST | `/api/payments-generate` | Auto-generate monthly bills |
-| PUT | `/api/payments/{id}` | Update a payment |
+| POST | `/api/payments-generate` | Auto-generate monthly bills for all active residents |
+| GET | `/api/payments/{id}` | Get payment details |
+| PUT | `/api/payments/{id}` | Update a payment (e.g., mark as paid) |
 | DELETE | `/api/payments/{id}` | Delete a payment |
 
 ### Expenses
@@ -219,24 +320,63 @@ After running `php artisan db:seed`, the database will be populated with:
 |--------|----------|-------------|
 | GET | `/api/expenses` | List expenses (filter: month, year, category) |
 | POST | `/api/expenses` | Create an expense |
+| GET | `/api/expenses/{id}` | Get expense details |
 | PUT | `/api/expenses/{id}` | Update an expense |
 | DELETE | `/api/expenses/{id}` | Delete an expense |
 
 ### Reports
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/reports/summary?year=2024` | Yearly summary (12 months) |
-| GET | `/api/reports/detail?month=1&year=2024` | Monthly detail |
+| GET | `/api/reports/summary?year=2026` | Yearly summary (12 months, income vs expenses) |
+| GET | `/api/reports/detail?month=1&year=2026` | Monthly detail (itemized income + expenses) |
+
+---
+
+## Running Tests
+
+### Backend Tests (Pest PHP)
+
+```bash
+cd backend
+./vendor/bin/pest
+```
+
+**Test coverage:** 96 tests, 469 assertions across 6 test files:
+- `AuthTest` — Login, logout, authentication, access control
+- `ResidentTest` — CRUD, search, validation
+- `HouseTest` — CRUD, assign/remove resident, history, occupancy status
+- `PaymentTest` — CRUD, filters, bulk creation, bill generation
+- `ExpenseTest` — CRUD, filters, validation
+- `ReportTest` — Yearly summary, monthly detail, correct totals
+
+### Frontend Tests (Vitest)
+
+```bash
+cd frontend
+npm test
+```
+
+**Test coverage:** 91 tests across 6 test files:
+- `utils.test.js` — `cn()` utility function
+- `api.test.js` — API client methods and axios configuration
+- `auth-context.test.jsx` — AuthProvider and useAuth hook
+- `theme-context.test.jsx` — ThemeProvider and useTheme hook
+- `login.test.jsx` — Login page rendering and interactions
+- `not-found.test.jsx` — 404 page
+
+---
 
 ## ERD
 
-See [ERD.md](./ERD.md) for the complete Entity Relationship Diagram.
+See [ERD.md](./ERD.md) for the complete Entity Relationship Diagram with all tables, columns, types, relationships, and constraints.
+
+---
 
 ## Troubleshooting
 
 ### Error: SQLSTATE[HY000] [2002] Connection refused
 - Make sure MySQL is running
-- Check the DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD configuration in `.env`
+- Check `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` in `.env`
 
 ### Error: The stream or file "storage/logs/laravel.log" could not be opened
 ```bash
@@ -244,10 +384,23 @@ chmod -R 775 storage bootstrap/cache
 ```
 
 ### Frontend cannot connect to API
-- Make sure the backend is running on port 8000
-- Check the proxy configuration in `vite.config.js`
+- Make sure the backend is running on port 8000: `php artisan serve --port=8000`
+- Make sure the frontend proxy is configured in `vite.config.js` (already set up by default)
 
 ### ID Photo not showing
 ```bash
+cd backend
 php artisan storage:link
 ```
+
+### Login returns 419 (CSRF token mismatch)
+- Make sure `SANCTUM_STATEFUL_DOMAINS` in `.env` includes your frontend URL
+- Default: `localhost:3000,localhost:3001,127.0.0.1:3000,127.0.0.1:3001`
+- Make sure `SESSION_DOMAIN=localhost` is set in `.env`
+
+### Fresh start (reset all data)
+```bash
+cd backend
+php artisan migrate:fresh --seed
+```
+This drops all tables, re-creates them, and seeds fresh sample data.

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -18,7 +17,33 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { reportApi } from '../lib/api';
+import { reportApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat('en-US', {
@@ -44,8 +69,8 @@ const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => currentYear - i);
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-      <p className="text-sm font-semibold text-gray-700 mb-1">{label}</p>
+    <div className="rounded-lg border bg-card p-3 shadow-lg">
+      <p className="text-sm font-semibold text-card-foreground mb-1">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} className="text-sm" style={{ color: entry.color }}>
           {entry.name}: {formatRupiah(entry.value)}
@@ -56,52 +81,33 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 // ─── Summary Card ──────────────────────────────────────────────────────────────
-function SummaryCard({ icon: Icon, label, value, colorClass, loading }) {
+function SummaryCard({ icon: Icon, label, value, iconClassName, loading }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${colorClass}`}>
-          <Icon size={24} />
+    <Card>
+      <CardContent className="pt-1">
+        <div className="flex items-center gap-4">
+          <div className={cn('p-3 rounded-lg', iconClassName)}>
+            <Icon size={24} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-muted-foreground truncate">
+              {label}
+            </p>
+            {loading ? (
+              <div className="h-7 w-28 bg-muted rounded animate-pulse mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground truncate">
+                {value}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-500 truncate">{label}</p>
-          {loading ? (
-            <div className="h-7 w-28 bg-gray-200 rounded animate-pulse mt-1" />
-          ) : (
-            <p className="text-2xl font-bold text-gray-900 truncate">{value}</p>
-          )}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// ─── Status Badge ──────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    paid: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    unpaid: 'bg-red-100 text-red-700',
-  };
-
-  const labelMap = {
-    paid: 'Paid',
-    pending: 'Pending',
-    unpaid: 'Unpaid',
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        map[status] || 'bg-gray-100 text-gray-700'
-      }`}
-    >
-      {labelMap[status] || status}
-    </span>
-  );
-}
-
-// ─── Main Page ─────────────────────────────────────────────────────────────────
+// ─── Main Report Page ──────────────────────────────────────────────────────────
 export default function Report() {
   const [year, setYear] = useState(currentYear);
   const [summaryData, setSummaryData] = useState(null);
@@ -114,6 +120,8 @@ export default function Report() {
   const [detailData, setDetailData] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [errorDetail, setErrorDetail] = useState(null);
+  const [incomePage, setIncomePage] = useState(1);
+  const INCOME_PER_PAGE = 10;
 
   // ── Fetch summary ───────────────────────────────────────────────────────────
   const fetchSummary = useCallback(async () => {
@@ -153,6 +161,11 @@ export default function Report() {
     setDetailData(null);
   }, [fetchSummary]);
 
+  // Reset income pagination when month changes
+  useEffect(() => {
+    setIncomePage(1);
+  }, [selectedMonth]);
+
   // ── Fetch detail ────────────────────────────────────────────────────────────
   const fetchDetail = useCallback(async () => {
     if (!selectedMonth) {
@@ -183,318 +196,405 @@ export default function Report() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Report</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Financial Report</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Summary of neighborhood income and expenses
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Calendar size={18} className="text-gray-400" />
-          <select
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-          >
-            {YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>
-                Year {y}
-              </option>
-            ))}
-          </select>
+          <Calendar size={18} className="text-muted-foreground" />
+          <Select value={year} onValueChange={(val) => setYear(Number(val))}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {YEAR_OPTIONS.map((y) => (
+                <SelectItem key={y} value={y}>
+                  Year {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* ── Summary Section ──────────────────────────────────────────────────── */}
+      {/* ── Error State ────────────────────────────────────────────────────── */}
       {errorSummary ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-10 text-center">
-          <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-          <p className="text-sm text-red-600">{errorSummary}</p>
-          <button
-            onClick={fetchSummary}
-            className="mt-3 text-sm text-blue-600 hover:underline"
-          >
-            Try again
-          </button>
-        </div>
+        <Card>
+          <CardContent className="py-10 text-center">
+            <AlertCircle size={40} className="mx-auto text-destructive mb-3" />
+            <p className="text-sm text-destructive">{errorSummary}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchSummary}
+              className="mt-4"
+            >
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          {/* Summary Cards */}
+          {/* ── Summary Cards ──────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <SummaryCard
               icon={TrendingUp}
               label="Total Income"
               value={formatRupiah(summaryData?.totalIncome || 0)}
-              colorClass="bg-green-50 text-green-600"
+              iconClassName="bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400"
               loading={loadingSummary}
             />
             <SummaryCard
               icon={TrendingDown}
               label="Total Expenses"
               value={formatRupiah(summaryData?.totalExpenses || 0)}
-              colorClass="bg-red-50 text-red-600"
+              iconClassName="bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
               loading={loadingSummary}
             />
             <SummaryCard
               icon={Wallet}
               label="Final Balance"
               value={formatRupiah(summaryData?.finalBalance || 0)}
-              colorClass="bg-blue-50 text-blue-600"
+              iconClassName="bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
               loading={loadingSummary}
             />
           </div>
 
-          {/* Bar Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Income vs Expenses Chart — {year}
-            </h2>
-            {loadingSummary ? (
-              <div className="h-80 flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={360}>
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                    tickFormatter={(value) =>
-                      value >= 1_000_000
-                        ? `${(value / 1_000_000).toFixed(0)}M`
-                        : value >= 1_000
-                        ? `${(value / 1_000).toFixed(0)}K`
-                        : value
-                    }
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 13 }} iconType="circle" />
-                  <Bar
-                    dataKey="income"
-                    name="Income"
-                    fill="#22c55e"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  />
-                  <Bar
-                    dataKey="expenses"
-                    name="Expenses"
-                    fill="#ef4444"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          {/* ── Bar Chart ──────────────────────────────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Income vs Expenses Chart — {year}
+              </CardTitle>
+              <CardDescription>
+                Monthly comparison of income and expenses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingSummary ? (
+                <div className="h-80 flex items-center justify-center">
+                  <Loader2 size={32} className="animate-spin text-primary" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={360}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#d1d5db' }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#d1d5db' }}
+                      tickFormatter={(value) =>
+                        value >= 1_000_000
+                          ? `${(value / 1_000_000).toFixed(0)}M`
+                          : value >= 1_000
+                          ? `${(value / 1_000).toFixed(0)}K`
+                          : value
+                      }
+                    />
+                    <Tooltip
+                     content={<ChartTooltip />}
+                     cursor={{ fill: 'rgba(255,255,255,0.06)', radius: 4 }}
+                   />
+                    <Legend wrapperStyle={{ fontSize: 13 }} iconType="circle" />
+                    <Bar
+                      dataKey="income"
+                      name="Income"
+                      fill="#22c55e"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={40}
+                    />
+                    <Bar
+                      dataKey="expenses"
+                      name="Expenses"
+                      fill="#ef4444"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
 
-      {/* ── Monthly Detail Section ───────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Monthly Detail
-            </h2>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-            >
-              <option value="">— Select Month —</option>
-              {MONTH_NAMES.map((name, index) => (
-                <option key={index + 1} value={index + 1}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <Separator />
 
-        <div className="p-5">
+      {/* ── Monthly Detail Section ─────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">Monthly Detail</CardTitle>
+              <CardDescription>
+                Select a month to view detailed income and expense breakdown
+              </CardDescription>
+            </div>
+            <Select
+              value={selectedMonth}
+              onValueChange={(val) => setSelectedMonth(val)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue>
+                  {selectedMonth
+                    ? MONTH_NAMES[Number(selectedMonth) - 1]
+                    : '— Select Month —'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {MONTH_NAMES.map((name, index) => (
+                  <SelectItem key={index + 1} value={String(index + 1)}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {/* No month selected */}
           {!selectedMonth ? (
-            <div className="py-10 text-center text-gray-400">
-              <BarChart3 size={48} className="mx-auto mb-3 text-gray-300" />
+            <div className="py-10 text-center text-muted-foreground">
+              <Calendar size={48} className="mx-auto mb-3 opacity-40" />
               <p className="font-medium">Select a month to view details</p>
               <p className="text-sm mt-1">
-                Choose a month from the dropdown above to display income and expense details.
+                Choose a month from the dropdown above to display income and
+                expense details.
               </p>
             </div>
           ) : loadingDetail ? (
+            /* Loading state */
             <div className="py-10 flex items-center justify-center">
-              <Loader2 size={32} className="animate-spin text-blue-500" />
+              <Loader2 size={32} className="animate-spin text-primary" />
             </div>
           ) : errorDetail ? (
+            /* Error state */
             <div className="py-10 text-center">
-              <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-              <p className="text-sm text-red-600">{errorDetail}</p>
-              <button
+              <AlertCircle size={40} className="mx-auto text-destructive mb-3" />
+              <p className="text-sm text-destructive">{errorDetail}</p>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={fetchDetail}
-                className="mt-3 text-sm text-blue-600 hover:underline"
+                className="mt-4"
               >
                 Try again
-              </button>
+              </Button>
             </div>
           ) : detailData ? (
+            /* Detail content */
             <div className="space-y-6">
               {/* Month Title */}
-              <h3 className="text-base font-semibold text-gray-800">
-                {detailData.month_name || MONTH_NAMES[Number(selectedMonth) - 1]} {year}
+              <h3 className="text-base font-semibold text-foreground">
+                {detailData.month_name ||
+                  MONTH_NAMES[Number(selectedMonth) - 1]}{' '}
+                {year}
               </h3>
 
-              {/* Income Detail */}
+              {/* ── Income Detail ──────────────────────────────────────────── */}
               <div>
-                <h4 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
                   <TrendingUp size={16} />
                   Income Detail
                 </h4>
-                {detailData.income?.detail?.length > 0 ? (
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-green-50 text-left">
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">House</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Resident</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Fee Type</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600 text-right">Amount</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Payment Date</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600 text-center">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {detailData.income.detail.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-2.5 text-gray-900 font-medium">
+                {detailData.income?.detail?.length > 0 ? (() => {
+                  const allItems = detailData.income.detail;
+                  const totalPages = Math.max(1, Math.ceil(allItems.length / INCOME_PER_PAGE));
+                  const safePage = Math.min(incomePage, totalPages);
+                  const paginated = allItems.slice((safePage - 1) * INCOME_PER_PAGE, safePage * INCOME_PER_PAGE);
+
+                  return (<>
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>House</TableHead>
+                          <TableHead>Resident</TableHead>
+                          <TableHead>Fee Type</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Payment Date</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginated.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">
                               {item.house || '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-700">
-                              {item.resident || '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-700 capitalize">
+                            </TableCell>
+                            <TableCell>{item.resident || '-'}</TableCell>
+                            <TableCell className="capitalize">
                               {item.fee_type || '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-900 font-medium text-right">
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
                               {formatRupiah(item.amount || 0)}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-600">
+                            </TableCell>
+                            <TableCell>
                               {item.payment_date
-                                ? new Date(item.payment_date).toLocaleDateString('en-US', {
+                                ? new Date(
+                                    item.payment_date
+                                  ).toLocaleDateString('en-US', {
                                     day: 'numeric',
                                     month: 'short',
                                     year: 'numeric',
                                   })
                                 : '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-center">
-                              <StatusBadge status={item.status || 'unpaid'} />
-                            </td>
-                          </tr>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant={
+                                  item.status === 'paid'
+                                    ? 'default'
+                                    : 'destructive'
+                                }
+                                className={cn(
+                                  item.status === 'paid' &&
+                                    'bg-green-600 text-white hover:bg-green-700'
+                                )}
+                              >
+                                {item.status === 'paid' ? 'Paid' : 'Unpaid'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-3">
+                      <p className="text-sm text-muted-foreground">
+                        Page {safePage} of {totalPages} ({allItems.length} records)
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setIncomePage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIncomePage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
+                      </div>
+                    </div>
+                  )}
+                  </>);
+                })() : (
+                  <p className="text-sm text-muted-foreground italic">
                     No income data for this month.
                   </p>
                 )}
               </div>
 
-              {/* Expense Detail */}
+              <Separator />
+
+              {/* ── Expense Detail ─────────────────────────────────────────── */}
               <div>
-                <h4 className="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
                   <TrendingDown size={16} />
                   Expense Detail
                 </h4>
                 {detailData.expenses?.detail?.length > 0 ? (
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-red-50 text-left">
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Category</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Description</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600 text-right">Amount</th>
-                          <th className="px-4 py-2.5 font-semibold text-gray-600">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead>Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {detailData.expenses.detail.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-2.5 text-gray-900 font-medium">
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">
                               {item.category || '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-600 max-w-xs truncate">
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate">
                               {item.description || '-'}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-900 font-medium text-right">
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
                               {formatRupiah(item.amount || 0)}
-                            </td>
-                            <td className="px-4 py-2.5 text-gray-600">
+                            </TableCell>
+                            <TableCell>
                               {item.date
-                                ? new Date(item.date).toLocaleDateString('en-US', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
+                                ? new Date(item.date).toLocaleDateString(
+                                    'en-US',
+                                    {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    }
+                                  )
                                 : '-'}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">
+                  <p className="text-sm text-muted-foreground italic">
                     No expense data for this month.
                   </p>
                 )}
               </div>
 
-              {/* Monthly Summary */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                  Summary for {detailData.month_name || MONTH_NAMES[Number(selectedMonth) - 1]} {year}
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
-                    <span className="text-xs text-gray-500">Total Income</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {formatRupiah(detailData.income?.total || 0)}
-                    </span>
+              <Separator />
+
+              {/* ── Monthly Summary ────────────────────────────────────────── */}
+              <Card className="bg-muted/50">
+                <CardHeader>
+                  <CardTitle className="text-sm">
+                    Summary for{' '}
+                    {detailData.month_name ||
+                      MONTH_NAMES[Number(selectedMonth) - 1]}{' '}
+                    {year}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Total Income
+                      </span>
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {formatRupiah(detailData.income?.total || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Total Expenses
+                      </span>
+                      <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                        {formatRupiah(detailData.expenses?.total || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Balance
+                      </span>
+                      <span
+                        className={cn(
+                          'text-lg font-bold',
+                          Number(detailData.balance || 0) >= 0
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-red-600 dark:text-red-400'
+                        )}
+                      >
+                        {formatRupiah(detailData.balance || 0)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
-                    <span className="text-xs text-gray-500">Total Expenses</span>
-                    <span className="text-lg font-bold text-red-600">
-                      {formatRupiah(detailData.expenses?.total || 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
-                    <span className="text-xs text-gray-500">Balance</span>
-                    <span
-                      className={`text-lg font-bold ${
-                        Number(detailData.balance || 0) >= 0
-                          ? 'text-blue-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {formatRupiah(detailData.balance || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           ) : null}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

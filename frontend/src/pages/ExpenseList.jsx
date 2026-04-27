@@ -3,7 +3,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  X,
   Loader2,
   AlertCircle,
   ArrowDownCircle,
@@ -11,7 +10,59 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { expenseApi } from '../lib/api';
+import { toast } from 'sonner';
+import { expenseApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 const formatRupiah = (amount) =>
   new Intl.NumberFormat('en-US', {
@@ -20,24 +71,8 @@ const formatRupiah = (amount) =>
     minimumFractionDigits: 0,
   }).format(amount);
 
-const MONTH_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: '1', label: 'January' },
-  { value: '2', label: 'February' },
-  { value: '3', label: 'March' },
-  { value: '4', label: 'April' },
-  { value: '5', label: 'May' },
-  { value: '6', label: 'June' },
-  { value: '7', label: 'July' },
-  { value: '8', label: 'August' },
-  { value: '9', label: 'September' },
-  { value: '10', label: 'October' },
-  { value: '11', label: 'November' },
-  { value: '12', label: 'December' },
-];
-
 const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => currentYear - 5 + i);
 
 const emptyForm = {
   category: '',
@@ -47,211 +82,6 @@ const emptyForm = {
   is_recurring: false,
 };
 
-// ─── Expense Modal ─────────────────────────────────────────────────────────────
-function ExpenseModal({ isOpen, onClose, onSubmit, initialData, submitting }) {
-  const [form, setForm] = useState(emptyForm);
-
-  useEffect(() => {
-    if (initialData) {
-      setForm({
-        category: initialData.category || '',
-        description: initialData.description || '',
-        amount: initialData.amount ? String(Number(initialData.amount)) : '',
-        date: initialData.date || '',
-        is_recurring: !!initialData.is_recurring,
-      });
-    } else {
-      setForm(emptyForm);
-    }
-  }, [initialData, isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      ...form,
-      amount: Number(form.amount),
-    });
-  };
-
-  const isEdit = !!initialData;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {isEdit ? 'Edit Expense' : 'Add Expense'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              required
-              placeholder="e.g. Security Salary"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Additional notes..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none"
-            />
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount (IDR) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="amount"
-              value={form.amount}
-              onChange={handleChange}
-              required
-              min="0"
-              placeholder="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-            />
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-            />
-          </div>
-
-          {/* Recurring */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="is_recurring"
-              id="is_recurring"
-              checked={form.is_recurring}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="is_recurring" className="text-sm text-gray-700">
-              Recurring expense
-            </label>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              {submitting && <Loader2 size={16} className="animate-spin" />}
-              {isEdit ? 'Save Changes' : 'Add'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ─── Delete Confirmation Modal ─────────────────────────────────────────────────
-function DeleteConfirmModal({ isOpen, onClose, onConfirm, item, deleting }) {
-  if (!isOpen || !item) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-        <div className="flex flex-col items-center text-center">
-          <div className="p-3 bg-red-100 rounded-full mb-4">
-            <AlertCircle size={24} className="text-red-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Delete Expense?
-          </h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Are you sure you want to delete the expense{' '}
-            <span className="font-medium text-gray-700">"{item.category}"</span>?
-            This action cannot be undone.
-          </p>
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={deleting}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              {deleting && <Loader2 size={16} className="animate-spin" />}
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ExpenseList() {
   // Data state
   const [data, setData] = useState([]);
@@ -265,27 +95,28 @@ export default function ExpenseList() {
 
   // Filter state
   const [year, setYear] = useState(String(currentYear));
-  const [month, setMonth] = useState('');
+  const [month, setMonth] = useState('all');
   const [category, setCategory] = useState('');
 
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
+  // Add/Edit dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
-  // Delete state
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ── Fetch data ──────────────────────────────────────────────────────────────
+  // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchData = useCallback(
     async (page = 1) => {
       setLoading(true);
       setError(null);
       try {
         const params = { page, year };
-        if (month) params.month = month;
+        if (month !== 'all') params.month = month;
         if (category.trim()) params.category = category.trim();
 
         const res = await expenseApi.getAll(params);
@@ -293,7 +124,11 @@ export default function ExpenseList() {
 
         if (Array.isArray(result)) {
           setData(result);
-          setPagination({ currentPage: 1, lastPage: 1, total: result.length });
+          setPagination({
+            currentPage: 1,
+            lastPage: 1,
+            total: result.length,
+          });
         } else {
           setData(result.data || []);
           setPagination({
@@ -316,53 +151,75 @@ export default function ExpenseList() {
     fetchData(1);
   }, [fetchData]);
 
-  // ── Total expenses ──────────────────────────────────────────────────────────
+  // ── Total expenses ────────────────────────────────────────────────────────
   const totalExpenses = data.reduce(
     (sum, item) => sum + Number(item.amount || 0),
     0
   );
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Dialog handlers ───────────────────────────────────────────────────────
   const handleOpenCreate = () => {
     setEditItem(null);
-    setModalOpen(true);
+    setForm(emptyForm);
+    setDialogOpen(true);
   };
 
   const handleOpenEdit = (item) => {
     setEditItem(item);
-    setModalOpen(true);
+    setForm({
+      category: item.category || '',
+      description: item.description || '',
+      amount: item.amount ? String(Number(item.amount)) : '',
+      date: item.date || '',
+      is_recurring: !!item.is_recurring,
+    });
+    setDialogOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
     setEditItem(null);
+    setForm(emptyForm);
   };
 
-  const handleSubmit = async (formData) => {
+  const handleFormChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setSubmitting(true);
     try {
+      const payload = {
+        ...form,
+        amount: Number(form.amount),
+      };
+
       if (editItem) {
-        await expenseApi.update(editItem.id, formData);
+        await expenseApi.update(editItem.id, payload);
+        toast.success('Expense updated successfully.');
       } else {
-        await expenseApi.create(formData);
+        await expenseApi.create(payload);
+        toast.success('Expense created successfully.');
       }
-      handleCloseModal();
+      handleCloseDialog();
       fetchData(editItem ? pagination.currentPage : 1);
     } catch (err) {
       console.error('Failed to save expense:', err);
-      alert('Failed to save data. Please try again.');
+      toast.error('Failed to save expense. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ── Delete handlers ───────────────────────────────────────────────────────
   const handleOpenDelete = (item) => {
     setDeleteItem(item);
-    setDeleteModalOpen(true);
+    setDeleteDialogOpen(true);
   };
 
   const handleCloseDelete = () => {
-    setDeleteModalOpen(false);
+    setDeleteDialogOpen(false);
     setDeleteItem(null);
   };
 
@@ -371,335 +228,474 @@ export default function ExpenseList() {
     setDeleting(true);
     try {
       await expenseApi.delete(deleteItem.id);
+      toast.success('Expense deleted successfully.');
       handleCloseDelete();
       fetchData(pagination.currentPage);
     } catch (err) {
       console.error('Failed to delete expense:', err);
-      alert('Failed to delete data. Please try again.');
+      toast.error('Failed to delete expense.');
     } finally {
       setDeleting(false);
     }
   };
 
+  // ── Pagination helpers ────────────────────────────────────────────────────
   const handlePageChange = (page) => {
     if (page >= 1 && page <= pagination.lastPage) {
       fetchData(page);
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const getPageNumbers = () => {
+    return Array.from({ length: pagination.lastPage }, (_, i) => i + 1)
+      .filter((page) => {
+        if (pagination.lastPage <= 7) return true;
+        if (page === 1 || page === pagination.lastPage) return true;
+        if (Math.abs(page - pagination.currentPage) <= 1) return true;
+        return false;
+      })
+      .reduce((acc, page, idx, arr) => {
+        if (idx > 0 && page - arr[idx - 1] > 1) {
+          acc.push('...');
+        }
+        acc.push(page);
+        return acc;
+      }, []);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage neighborhood association expenses
           </p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-        >
-          <Plus size={18} />
+        <Button onClick={handleOpenCreate}>
+          <Plus className="mr-2 h-4 w-4" />
           Add Expense
-        </button>
+        </Button>
       </div>
 
       {/* Total Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-red-50 text-red-600">
-            <ArrowDownCircle size={24} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">
-              Total Expenses (this page)
-            </p>
-            {loading ? (
-              <div className="h-7 w-32 bg-gray-200 rounded animate-pulse mt-1" />
-            ) : (
-              <p className="text-2xl font-bold text-gray-900">
-                {formatRupiah(totalExpenses)}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-red-50 text-red-600">
+              <ArrowDownCircle className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Expenses (this page)
               </p>
-            )}
+              {loading ? (
+                <div className="h-7 w-32 bg-muted rounded animate-pulse mt-1" />
+              ) : (
+                <p className="text-2xl font-bold">
+                  {formatRupiah(totalExpenses)}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card>
+        <CardContent className="flex flex-col sm:flex-row gap-3 py-3">
           {/* Year */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Year
-            </label>
-            <select
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-            >
-              {YEAR_OPTIONS.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Year</label>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Month */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Month
-            </label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-            >
-              {MONTH_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Month</label>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {month === 'all' ? 'All' : MONTH_NAMES[Number(month) - 1]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {MONTH_NAMES.map((name, idx) => (
+                  <SelectItem key={idx + 1} value={String(idx + 1)}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Category */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Category
-            </label>
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Category</label>
             <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="Search category..."
-                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="pl-9"
               />
             </div>
           </div>
-
-          {/* Info */}
-          <div className="flex items-end">
-            <p className="text-xs text-gray-400">
-              Showing {data.length} of {pagination.total} records
-            </p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="h-12 bg-gray-100 rounded animate-pulse"
-              />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="p-10 text-center">
-            <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-            <p className="text-sm text-red-600">{error}</p>
-            <button
-              onClick={() => fetchData(1)}
-              className="mt-3 text-sm text-blue-600 hover:underline"
-            >
-              Try again
-            </button>
-          </div>
-        ) : data.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">
-            <ArrowDownCircle
-              size={40}
-              className="mx-auto text-gray-300 mb-3"
-            />
-            <p className="font-medium">No expense data yet</p>
-            <p className="text-sm mt-1">
-              Click &quot;Add Expense&quot; to add new data.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left">
-                  <th className="px-5 py-3 font-semibold text-gray-600 w-12">
-                    No
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">
-                    Category
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">
-                    Description
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600 text-right">
-                    Amount
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600">
-                    Date
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600 text-center">
-                    Recurring
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-gray-600 text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-3 text-gray-500">
-                      {(pagination.currentPage - 1) * data.length > 0
-                        ? (pagination.currentPage - 1) * 10 + index + 1
-                        : index + 1}
-                    </td>
-                    <td className="px-5 py-3 text-gray-900 font-medium">
-                      {item.category}
-                    </td>
-                    <td className="px-5 py-3 text-gray-600 max-w-xs truncate">
-                      {item.description || '-'}
-                    </td>
-                    <td className="px-5 py-3 text-gray-900 font-medium text-right">
-                      {formatRupiah(item.amount)}
-                    </td>
-                    <td className="px-5 py-3 text-gray-600">
-                      {new Date(item.date).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      {item.is_recurring ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          No
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleOpenDelete(item)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {!loading && !error && pagination.lastPage > 1 && (
-          <div className="flex items-center justify-between px-5 py-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              Page {pagination.currentPage} of {pagination.lastPage} ({pagination.total} records)
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handlePageChange(pagination.currentPage - 1)}
-                disabled={pagination.currentPage <= 1}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-12 bg-muted rounded animate-pulse"
+                />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="p-10 text-center">
+              <AlertCircle className="mx-auto h-10 w-10 text-destructive/60 mb-3" />
+              <p className="text-sm text-destructive">{error}</p>
+              <Button
+                variant="link"
+                onClick={() => fetchData(1)}
+                className="mt-2"
               >
-                <ChevronLeft size={18} />
-              </button>
-              {Array.from({ length: pagination.lastPage }, (_, i) => i + 1)
-                .filter((page) => {
-                  const current = pagination.currentPage;
-                  return (
-                    page === 1 ||
-                    page === pagination.lastPage ||
-                    Math.abs(page - current) <= 1
-                  );
-                })
-                .reduce((acc, page, idx, arr) => {
-                  if (idx > 0 && page - arr[idx - 1] > 1) {
-                    acc.push('...');
+                Try again
+              </Button>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              <ArrowDownCircle className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-medium">No expense data found</p>
+              <p className="text-sm mt-1">
+                Click &quot;Add Expense&quot; to add new data.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">No</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-center">Recurring</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((item, index) => {
+                    const rowNumber =
+                      (pagination.currentPage - 1) * 10 + index + 1;
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-muted-foreground">
+                          {rowNumber}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {item.category}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-muted-foreground">
+                          {item.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatRupiah(item.amount)}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(item.date).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant={
+                              item.is_recurring ? 'default' : 'secondary'
+                            }
+                            className={cn(
+                              item.is_recurring &&
+                                'bg-green-100 text-green-700 hover:bg-green-100'
+                            )}
+                          >
+                            {item.is_recurring ? 'Yes' : 'No'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => handleOpenEdit(item)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleOpenDelete(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && !error && pagination.lastPage > 1 && (
+            <div className="flex items-center justify-between px-5 py-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Page {pagination.currentPage} of {pagination.lastPage} (
+                {pagination.total} records)
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handlePageChange(pagination.currentPage - 1)
                   }
-                  acc.push(page);
-                  return acc;
-                }, [])
-                .map((page, idx) =>
+                  disabled={pagination.currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                {getPageNumbers().map((page, idx) =>
                   page === '...' ? (
                     <span
                       key={`ellipsis-${idx}`}
-                      className="px-2 py-1 text-sm text-gray-400"
+                      className="px-2 text-muted-foreground"
                     >
                       ...
                     </span>
                   ) : (
-                    <button
+                    <Button
                       key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                      variant={
                         page === pagination.currentPage
-                          ? 'bg-blue-600 text-white font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
                     >
                       {page}
-                    </button>
+                    </Button>
                   )
                 )}
-              <button
-                onClick={() => handlePageChange(pagination.currentPage + 1)}
-                disabled={pagination.currentPage >= pagination.lastPage}
-                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={18} />
-              </button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handlePageChange(pagination.currentPage + 1)
+                  }
+                  disabled={pagination.currentPage >= pagination.lastPage}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Modals */}
-      <ExpenseModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleSubmit}
-        initialData={editItem}
-        submitting={submitting}
-      />
+      {/* Add / Edit Expense Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editItem ? 'Edit Expense' : 'Add Expense'}
+            </DialogTitle>
+            <DialogDescription>
+              {editItem
+                ? 'Update the expense details below.'
+                : 'Fill in the details to add a new expense.'}
+            </DialogDescription>
+          </DialogHeader>
 
-      <DeleteConfirmModal
-        isOpen={deleteModalOpen}
-        onClose={handleCloseDelete}
-        onConfirm={handleConfirmDelete}
-        item={deleteItem}
-        deleting={deleting}
-      />
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 py-4">
+              {/* Category */}
+              <div className="space-y-2">
+                <Label htmlFor="category">
+                  Category <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="category"
+                  value={form.category}
+                  onChange={(e) =>
+                    handleFormChange('category', e.target.value)
+                  }
+                  placeholder="e.g. Security Salary"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={form.description}
+                  onChange={(e) =>
+                    handleFormChange('description', e.target.value)
+                  }
+                  placeholder="Additional notes..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Amount */}
+              <div className="space-y-2">
+                <Label htmlFor="amount">
+                  Amount (IDR) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={form.amount}
+                  onChange={(e) =>
+                    handleFormChange('amount', e.target.value)
+                  }
+                  placeholder="0"
+                  min="0"
+                  required
+                />
+              </div>
+
+              {/* Date */}
+              <div className="space-y-2">
+                <Label htmlFor="date">
+                  Date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={form.date}
+                  onChange={(e) =>
+                    handleFormChange('date', e.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              {/* Recurring */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_recurring"
+                  checked={form.is_recurring}
+                  onCheckedChange={(checked) =>
+                    handleFormChange('is_recurring', !!checked)
+                  }
+                />
+                <Label
+                  htmlFor="is_recurring"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Recurring expense
+                </Label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : editItem ? (
+                  'Save Changes'
+                ) : (
+                  'Add'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto p-3 bg-red-100 rounded-full mb-2">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-center">Delete Expense?</DialogTitle>
+            <DialogDescription className="text-center">
+              Are you sure you want to delete the expense{' '}
+              <span className="font-medium text-foreground">
+                &quot;{deleteItem?.category}&quot;
+              </span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row gap-3 sm:justify-center">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleCloseDelete}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

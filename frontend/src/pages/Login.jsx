@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { LogIn, Loader2, AlertCircle, Building2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -32,96 +43,107 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
-            <Building2 size={32} className="text-white" />
+          <div className="inline-flex items-center justify-center size-16 bg-primary rounded-2xl mb-4 shadow-lg">
+            <Building2 className="size-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Neighborhood Admin</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">
+            Neighborhood Admin
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Sign in to manage your neighborhood
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                <AlertCircle size={16} className="shrink-0" />
-                <span>{error}</span>
+        <Card className="shadow-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Sign In</CardTitle>
+            <CardDescription>
+              Use the credentials below to sign in
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Credentials hint */}
+              <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Demo Credentials</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <code className="text-foreground font-mono text-xs bg-muted px-1.5 py-0.5 rounded">admin@neighborhood.com</code>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Password</span>
+                  <code className="text-foreground font-mono text-xs bg-muted px-1.5 py-0.5 rounded">password</code>
+                </div>
               </div>
-            )}
 
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                autoFocus
-                placeholder="admin@neighborhood.com"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              />
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <LogIn size={18} />
-                  Sign In
-                </>
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  <AlertCircle className="size-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
-          </form>
-        </div>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Neighborhood Administration System v1.0.0
-        </p>
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="admin@neighborhood.com"
+                />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="justify-center pt-0">
+            <p className="text-xs text-muted-foreground">
+              Neighborhood Administration System v1.0.0
+            </p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

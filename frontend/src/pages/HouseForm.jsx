@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Building2, ArrowLeft, Save } from 'lucide-react';
-import { houseApi } from '../lib/api';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { houseApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 export default function HouseForm() {
   const { id } = useParams();
@@ -13,14 +26,12 @@ export default function HouseForm() {
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
   // Load existing data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
         const response = await houseApi.getById(id);
         const data = response.data?.data || response.data;
         setFormData({
@@ -28,7 +39,9 @@ export default function HouseForm() {
           address: data.address || '',
         });
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load house data.');
+        toast.error(
+          err.response?.data?.message || 'Failed to load house data.'
+        );
       } finally {
         setLoading(false);
       }
@@ -50,11 +63,11 @@ export default function HouseForm() {
     e.preventDefault();
     try {
       setSubmitting(true);
-      setError(null);
       await houseApi.update(id, formData);
+      toast.success('House updated successfully.');
       navigate(`/houses/${id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save house data.');
+      toast.error(err.response?.data?.message || 'Failed to save house data.');
     } finally {
       setSubmitting(false);
     }
@@ -64,109 +77,78 @@ export default function HouseForm() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
     <div>
-      {/* Back button */}
-      <button
-        onClick={() => navigate(id ? `/houses/${id}` : '/houses')}
-        className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        className="mb-6"
+        onClick={() => navigate(`/houses/${id}`)}
       >
-        <ArrowLeft size={16} />
-        {id ? 'Back to House Detail' : 'Back to House List'}
-      </button>
+        <ArrowLeft className="size-4" />
+        Back to House Detail
+      </Button>
 
       {/* Form Card */}
       <div className="max-w-xl mx-auto">
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="text-blue-600" size={20} />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  Edit House
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Update house information
-                </p>
-              </div>
-            </div>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit House</CardTitle>
+            <CardDescription>Update house information</CardDescription>
+          </CardHeader>
 
-          {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="px-6 py-5 space-y-5">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <label
-                  htmlFor="house_number"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                  House Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
+            <CardContent className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="house_number">
+                  House Number <span className="text-destructive">*</span>
+                </Label>
+                <Input
                   id="house_number"
                   name="house_number"
                   required
+                  placeholder="e.g. A-01"
                   value={formData.house_number}
                   onChange={handleChange}
-                  placeholder="e.g. A-01"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                  Address
-                </label>
-                <input
-                  type="text"
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
                   id="address"
                   name="address"
+                  placeholder="e.g. 123 Maple Street"
                   value={formData.address}
                   onChange={handleChange}
-                  placeholder="e.g. 123 Maple Street"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-            </div>
+            </CardContent>
 
-            {/* Actions */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-              <button
+            <CardFooter className="flex justify-end gap-3">
+              <Button
                 type="button"
-                onClick={() => navigate(id ? `/houses/${id}` : '/houses')}
-                className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                variant="outline"
+                onClick={() => navigate(`/houses/${id}`)}
               >
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save size={16} />
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 {submitting ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+              </Button>
+            </CardFooter>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

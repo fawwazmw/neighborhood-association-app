@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -8,11 +8,27 @@ import {
   ArrowDownCircle,
   BarChart3,
   Menu,
-  X,
   LogOut,
-  User,
+  PanelLeftClose,
+  PanelLeft,
+  Sun,
+  Moon,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -23,12 +39,152 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
+function getInitials(name) {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+/*
+ * Sidebar item padding.
+ * Collapsed inner = 68 - 8 - 8 = 52px.
+ * 18px icon → (52-18)/2 = 17px.  32px avatar → (52-32)/2 = 10px.
+ * No padding transition — sidebar width handles the shift.
+ */
+const itemPad = (c) => (c ? 'px-[17px]' : 'px-3');
+const itemPadWide = (c) => (c ? 'px-[10px]' : 'px-3');
+
+/* Fade-only class for text labels — no layout transitions */
+const textFade = (c) =>
+  c ? 'w-0 opacity-0 ml-0' : 'w-auto opacity-100 ml-3';
+
+/* ─── Nav Items ─────────────────────────────────────────────────────────────── */
+function NavItems({ location, collapsed, onNavigate }) {
+  return (
+    <nav className="flex flex-col gap-0.5 px-2">
+      {navigation.map((item) => {
+        const isActive =
+          location.pathname === item.href ||
+          (item.href !== '/' && location.pathname.startsWith(item.href));
+
+        const link = (
+          <Link
+            to={item.href}
+            onClick={onNavigate}
+            className={cn(
+              'flex items-center rounded-lg h-10 w-full text-sm font-medium',
+              itemPad(collapsed),
+              isActive
+                ? 'bg-white/15 text-white'
+                : 'text-zinc-400 hover:bg-white/10 hover:text-white'
+            )}
+          >
+            <item.icon className="size-[18px] shrink-0" />
+            <span
+              className={cn(
+                'whitespace-nowrap overflow-hidden transition-opacity duration-150',
+                textFade(collapsed)
+              )}
+            >
+              {item.name}
+            </span>
+          </Link>
+        );
+
+        if (collapsed) {
+          return (
+            <Tooltip key={item.name} delayDuration={0}>
+              <TooltipTrigger asChild>{link}</TooltipTrigger>
+              <TooltipContent side="right" className="font-medium">
+                {item.name}
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+
+        return <div key={item.name}>{link}</div>;
+      })}
+    </nav>
+  );
+}
+
+/* ─── Sidebar User ──────────────────────────────────────────────────────────── */
+function SidebarUser({ user, collapsed, onLogout, loggingOut }) {
+  if (!user) return null;
+
+  return (
+    <div className="px-2 pb-3 flex flex-col gap-0.5">
+      <div className={cn('flex items-center rounded-lg h-10 w-full', itemPadWide(collapsed))}>
+        <Avatar className="size-8 shrink-0">
+          <AvatarFallback className="bg-emerald-600 text-white text-xs font-semibold">
+            {getInitials(user.name)}
+          </AvatarFallback>
+        </Avatar>
+        <div
+          className={cn(
+            'min-w-0 overflow-hidden transition-opacity duration-150',
+            collapsed ? 'w-0 opacity-0 ml-0' : 'w-auto opacity-100 ml-3 flex-1'
+          )}
+        >
+          <p className="text-sm font-medium text-white truncate">{user.name}</p>
+          <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+        </div>
+      </div>
+
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onLogout}
+            disabled={loggingOut}
+            className={cn(
+              'flex items-center rounded-lg h-10 w-full text-sm text-zinc-400 hover:bg-white/10 hover:text-red-400 disabled:opacity-50',
+              itemPad(collapsed)
+            )}
+          >
+            <LogOut className="size-[18px] shrink-0" />
+            <span
+              className={cn(
+                'whitespace-nowrap overflow-hidden transition-opacity duration-150',
+                textFade(collapsed)
+              )}
+            >
+              {loggingOut ? 'Signing out...' : 'Sign Out'}
+            </span>
+          </button>
+        </TooltipTrigger>
+        {collapsed && (
+          <TooltipContent side="right" className="font-medium">
+            Sign Out
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </div>
+  );
+}
+
+/* ─── Main Layout ───────────────────────────────────────────────────────────── */
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoHovered, setLogoHovered] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(collapsed));
+  }, [collapsed]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -41,120 +197,150 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
+    <div className="min-h-screen bg-background">
+      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 hidden flex-col bg-zinc-900 lg:flex will-change-[width] transition-[width] duration-200 ease-out',
+          collapsed ? 'w-[68px]' : 'w-64'
+        )}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-blue-600">Neighborhood Admin</h1>
-          <button
-            className="lg:hidden text-gray-500 hover:text-gray-700"
-            onClick={() => setSidebarOpen(false)}
+        {/* Header */}
+        <div
+          className={cn(
+            'flex h-14 items-center shrink-0',
+            collapsed ? 'px-[18px]' : 'px-3'
+          )}
+        >
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={collapsed ? () => setCollapsed(false) : undefined}
+                onMouseEnter={() => setLogoHovered(true)}
+                onMouseLeave={() => setLogoHovered(false)}
+                className={cn(
+                  'flex size-8 items-center justify-center rounded-lg shrink-0',
+                  collapsed
+                    ? 'bg-white/10 hover:bg-white/20 cursor-pointer'
+                    : 'bg-white/10 cursor-default'
+                )}
+              >
+                {collapsed && logoHovered ? (
+                  <PanelLeft className="size-4 text-white" />
+                ) : (
+                  <Building2 className="size-4 text-white" />
+                )}
+              </button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" className="font-medium">
+                Open sidebar
+              </TooltipContent>
+            )}
+          </Tooltip>
+
+          <span
+            className={cn(
+              'text-sm font-semibold text-white whitespace-nowrap overflow-hidden transition-opacity duration-150',
+              collapsed ? 'w-0 opacity-0 ml-0' : 'w-auto opacity-100 ml-2 flex-1'
+            )}
           >
-            <X size={20} />
+            Neighborhood Admin
+          </span>
+          <button
+            onClick={() => setCollapsed(true)}
+            className={cn(
+              'flex size-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white shrink-0 transition-opacity duration-150',
+              collapsed ? 'opacity-0 pointer-events-none w-0' : 'opacity-100'
+            )}
+          >
+            <PanelLeftClose className="size-[18px]" />
           </button>
         </div>
-        <nav className="mt-4 px-3">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href || 
-              (item.href !== '/' && location.pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 mb-1 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <item.icon size={20} />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
 
-        {/* User info + Logout at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
-          {user && (
-            <div className="px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
-                  <User size={16} className="text-blue-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="px-3 pb-3">
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-            >
-              <LogOut size={20} />
-              {loggingOut ? 'Signing out...' : 'Sign Out'}
-            </button>
-          </div>
-          <div className="px-4 pb-3">
-            <p className="text-xs text-gray-400 text-center">
-              Neighborhood Administration System
-            </p>
-            <p className="text-xs text-gray-400 text-center">v1.0.0</p>
-          </div>
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto py-2">
+          <NavItems location={location} collapsed={collapsed} />
         </div>
+
+        {/* User */}
+        <SidebarUser
+          user={user}
+          collapsed={collapsed}
+          onLogout={handleLogout}
+          loggingOut={loggingOut}
+        />
       </aside>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex items-center h-16 px-4 bg-white border-b border-gray-200 shadow-sm">
-          <button
-            className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu size={24} />
-          </button>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Neighborhood Administration System
+      {/* ── Main Content ─────────────────────────────────────────────────── */}
+      <div
+        className={cn(
+          'will-change-[padding-left] transition-[padding-left] duration-200 ease-out',
+          collapsed ? 'lg:pl-[68px]' : 'lg:pl-64'
+        )}
+      >
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4">
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden size-9">
+                <Menu className="size-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-64 bg-zinc-900 border-zinc-800 p-0 [&>button]:text-zinc-400 [&>button]:hover:text-white"
+            >
+              <div className="flex h-14 items-center gap-2 px-4">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-white/10">
+                  <Building2 className="size-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold text-white">
+                  Neighborhood Admin
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col justify-between h-[calc(100%-3.5rem)]">
+                <div className="py-2 overflow-y-auto">
+                  <NavItems
+                    location={location}
+                    collapsed={false}
+                    onNavigate={() => setSheetOpen(false)}
+                  />
+                </div>
+                <SidebarUser
+                  user={user}
+                  collapsed={false}
+                  onLogout={handleLogout}
+                  loggingOut={loggingOut}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm font-medium text-foreground truncate">
+              {navigation.find(
+                (n) =>
+                  location.pathname === n.href ||
+                  (n.href !== '/' && location.pathname.startsWith(n.href))
+              )?.name || 'Neighborhood Admin'}
             </h2>
           </div>
-          {/* Desktop logout */}
-          {user && (
-            <div className="hidden sm:flex items-center gap-3">
-              <span className="text-sm text-gray-600">{user.name}</span>
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <LogOut size={16} />
-                Sign Out
-              </button>
-            </div>
-          )}
+
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-9" onClick={toggleTheme}>
+                {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </TooltipContent>
+          </Tooltip>
         </header>
 
-        {/* Page content */}
         <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>

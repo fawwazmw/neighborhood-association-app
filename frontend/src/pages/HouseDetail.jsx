@@ -1,14 +1,54 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
+  ArrowLeft,
   Building2,
   UserPlus,
   UserMinus,
   History,
   CreditCard,
-  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
-import { houseApi, residentApi } from '../lib/api';
+import { toast } from 'sonner';
+
+import { houseApi, residentApi } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-US', {
@@ -21,7 +61,7 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('en-US', {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
   });
 };
@@ -34,8 +74,8 @@ export default function HouseDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Assign resident modal
-  const [showAssignModal, setShowAssignModal] = useState(false);
+  // Assign resident dialog
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [residentList, setResidentList] = useState([]);
   const [loadingResidents, setLoadingResidents] = useState(false);
   const [assignData, setAssignData] = useState({
@@ -43,10 +83,16 @@ export default function HouseDetail() {
     start_date: '',
   });
   const [assignSubmitting, setAssignSubmitting] = useState(false);
-  const [assignError, setAssignError] = useState(null);
 
-  // Remove resident
+  // Remove resident dialog
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [removeSubmitting, setRemoveSubmitting] = useState(false);
+
+  // Pagination
+  const [historyPage, setHistoryPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const HISTORY_PER_PAGE = 5;
+  const PAYMENT_PER_PAGE = 10;
 
   const fetchHouse = useCallback(async () => {
     try {
@@ -65,18 +111,16 @@ export default function HouseDetail() {
     fetchHouse();
   }, [fetchHouse]);
 
-  const openAssignModal = async () => {
-    setShowAssignModal(true);
-    setAssignError(null);
+  const openAssignDialog = async () => {
+    setAssignDialogOpen(true);
     setAssignData({ resident_id: '', start_date: '' });
     try {
       setLoadingResidents(true);
       const response = await residentApi.getAll({ per_page: 100 });
       const data = response.data?.data;
-      // Handle both paginated and non-paginated responses
       setResidentList(Array.isArray(data) ? data : data?.data || []);
     } catch {
-      setAssignError('Failed to load resident data.');
+      toast.error('Failed to load resident data.');
     } finally {
       setLoadingResidents(false);
     }
@@ -86,29 +130,26 @@ export default function HouseDetail() {
     e.preventDefault();
     try {
       setAssignSubmitting(true);
-      setAssignError(null);
       await houseApi.assignResident(id, assignData);
-      setShowAssignModal(false);
+      toast.success('Resident assigned successfully.');
+      setAssignDialogOpen(false);
       fetchHouse();
     } catch (err) {
-      setAssignError(
-        err.response?.data?.message || 'Failed to assign resident.'
-      );
+      toast.error(err.response?.data?.message || 'Failed to assign resident.');
     } finally {
       setAssignSubmitting(false);
     }
   };
 
   const handleRemoveResident = async () => {
-    if (!window.confirm('Are you sure you want to remove the resident from this house?')) {
-      return;
-    }
     try {
       setRemoveSubmitting(true);
       await houseApi.removeResident(id);
+      toast.success('Resident removed successfully.');
+      setRemoveDialogOpen(false);
       fetchHouse();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to remove resident.');
+      toast.error(err.response?.data?.message || 'Failed to remove resident.');
     } finally {
       setRemoveSubmitting(false);
     }
@@ -120,16 +161,15 @@ export default function HouseDetail() {
   );
   const isOccupied = !!activeResident;
   const houseResidentHistory = house?.house_residents || [];
-  // Collect all payments from all house_residents records
-  const paymentList = houseResidentHistory.flatMap(
-    (hr) => (hr.payments || []).map(p => ({ ...p, _resident: hr.resident }))
+  const paymentList = houseResidentHistory.flatMap((hr) =>
+    (hr.payments || []).map((p) => ({ ...p, _resident: hr.resident }))
   );
 
   // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -137,17 +177,14 @@ export default function HouseDetail() {
   // Error state
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto py-10">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+      <div className="max-w-2xl mx-auto py-10 space-y-4">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
-        <button
-          onClick={() => navigate('/houses')}
-          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
-        >
-          <ArrowLeft size={16} />
+        <Button variant="ghost" onClick={() => navigate('/houses')}>
+          <ArrowLeft className="size-4" />
           Back to House List
-        </button>
+        </Button>
       </div>
     );
   }
@@ -155,71 +192,62 @@ export default function HouseDetail() {
   if (!house) return null;
 
   return (
-    <div>
-      {/* Back button */}
-      <button
-        onClick={() => navigate('/houses')}
-        className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-      >
-        <ArrowLeft size={16} />
+    <div className="space-y-6">
+      {/* Back Button */}
+      <Button variant="ghost" onClick={() => navigate('/houses')}>
+        <ArrowLeft className="size-4" />
         Back to House List
-      </button>
+      </Button>
 
       {/* House Info Card */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-6">
-        <div className="p-6">
+      <Card>
+        <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Building2 className="text-blue-600" size={28} />
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <Building2 className="size-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <CardTitle className="text-xl">
                   House {house.house_number}
-                </h1>
+                </CardTitle>
                 {house.address && (
-                  <p className="text-sm text-gray-500 mt-0.5">{house.address}</p>
+                  <CardDescription>{house.address}</CardDescription>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span
-                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
-                  isOccupied
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
+              <Badge variant={isOccupied ? 'default' : 'secondary'}>
                 {isOccupied ? 'Occupied' : 'Vacant'}
-              </span>
-              <Link
-                to={`/houses/${id}/edit`}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Edit
+              </Badge>
+              <Link to={`/houses/${id}/edit`}>
+                <Button variant="outline">
+                  Edit
+                </Button>
               </Link>
             </div>
           </div>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
-      {/* Current Resident Section */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <UserPlus size={20} className="text-gray-500" />
+      {/* Current Resident Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="size-4 text-muted-foreground" />
             Current Resident
-          </h2>
-        </div>
-        <div className="p-6">
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
           {isOccupied && activeResident ? (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
                     Resident Name
                   </p>
-                  <p className="text-base font-semibold text-gray-900">
+                  <p className="text-base font-semibold">
                     {activeResident.resident?.full_name ||
                       activeResident.full_name ||
                       '-'}
@@ -227,310 +255,339 @@ export default function HouseDetail() {
                 </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
                   <div>
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
                       Phone Number
                     </p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm">
                       {activeResident.resident?.phone_number ||
                         activeResident.phone_number ||
                         '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
                       Status
                     </p>
-                    <p className="text-sm text-gray-700 capitalize">
+                    <Badge variant="outline" className="mt-0.5 capitalize">
                       {activeResident.resident?.resident_status ||
                         activeResident.resident_status ||
                         '-'}
-                    </p>
+                    </Badge>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
                       Move-in Date
                     </p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm">
                       {formatDate(activeResident.start_date)}
                     </p>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleRemoveResident}
-                disabled={removeSubmitting}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 shrink-0"
-              >
-                <UserMinus size={16} />
-                {removeSubmitting ? 'Removing...' : 'Remove Resident'}
-              </button>
+
+              {/* Remove Resident with Confirmation Dialog */}
+              <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+                <DialogTrigger
+                  render={
+                    <Button variant="destructive" className="shrink-0">
+                      <UserMinus className="size-4" />
+                      Remove Resident
+                    </Button>
+                  }
+                />
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Remove Resident</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to remove{' '}
+                      <span className="font-semibold">
+                        {activeResident.resident?.full_name ||
+                          activeResident.full_name}
+                      </span>{' '}
+                      from this house? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose
+                      render={
+                        <Button variant="outline">Cancel</Button>
+                      }
+                    />
+                    <Button
+                      variant="destructive"
+                      disabled={removeSubmitting}
+                      onClick={handleRemoveResident}
+                    >
+                      {removeSubmitting && (
+                        <Loader2 className="size-4 animate-spin" />
+                      )}
+                      {removeSubmitting ? 'Removing...' : 'Remove'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
-            <div className="text-center py-6">
-              <p className="text-gray-400 mb-4">
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="text-sm text-muted-foreground mb-4">
                 This house does not have a resident yet.
               </p>
-              <button
-                onClick={openAssignModal}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+
+              {/* Assign Resident Dialog */}
+              <Dialog
+                open={assignDialogOpen}
+                onOpenChange={(open) => {
+                  if (open) {
+                    openAssignDialog();
+                  } else {
+                    setAssignDialogOpen(false);
+                  }
+                }}
               >
-                <UserPlus size={16} />
-                Assign Resident
-              </button>
+                <DialogTrigger
+                  render={
+                    <Button>
+                      <UserPlus className="size-4" />
+                      Assign Resident
+                    </Button>
+                  }
+                />
+
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Assign Resident</DialogTitle>
+                    <DialogDescription>
+                      Select a resident to assign to this house.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <form onSubmit={handleAssign}>
+                    <div className="grid gap-4 py-2">
+                      <div className="grid gap-2">
+                        <Label>
+                          Resident <span className="text-destructive">*</span>
+                        </Label>
+                        {loadingResidents ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                            <Loader2 className="size-4 animate-spin" />
+                            Loading residents...
+                          </div>
+                        ) : (
+                          <Select
+                            value={assignData.resident_id}
+                            onValueChange={(value) =>
+                              setAssignData({ ...assignData, resident_id: value })
+                            }
+                            required
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a resident" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {residentList.map((r) => (
+                                <SelectItem key={r.id} value={String(r.id)}>
+                                  {r.full_name}
+                                  {r.resident_status
+                                    ? ` (${r.resident_status})`
+                                    : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="start_date">
+                          Start Date{' '}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="start_date"
+                          type="date"
+                          required
+                          value={assignData.start_date}
+                          onChange={(e) =>
+                            setAssignData({
+                              ...assignData,
+                              start_date: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <DialogClose
+                        render={
+                          <Button type="button" variant="outline">
+                            Cancel
+                          </Button>
+                        }
+                      />
+                      <Button
+                        type="submit"
+                        disabled={assignSubmitting || loadingResidents}
+                      >
+                        {assignSubmitting && (
+                          <Loader2 className="size-4 animate-spin" />
+                        )}
+                        {assignSubmitting ? 'Assigning...' : 'Assign'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Resident History */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <History size={20} className="text-gray-500" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-muted-foreground" />
             Resident History
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          {houseResidentHistory.length > 0 ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Resident Name
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Start Date
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    End Date
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[...houseResidentHistory]
-                  .sort(
-                    (a, b) =>
-                      new Date(b.start_date || 0) -
-                      new Date(a.start_date || 0)
-                  )
-                  .map((hr, idx) => (
-                    <tr key={hr.id || idx} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 font-medium text-gray-900">
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          {houseResidentHistory.length > 0 ? (() => {
+            const sorted = [...houseResidentHistory].sort(
+              (a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0)
+            );
+            const totalPages = Math.max(1, Math.ceil(sorted.length / HISTORY_PER_PAGE));
+            const safePage = Math.min(historyPage, totalPages);
+            const paginated = sorted.slice((safePage - 1) * HISTORY_PER_PAGE, safePage * HISTORY_PER_PAGE);
+
+            return (<>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Resident Name</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>End Date</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((hr, idx) => (
+                    <TableRow key={hr.id || idx}>
+                      <TableCell className="font-medium">
                         {hr.resident?.full_name || '-'}
-                      </td>
-                      <td className="px-6 py-3 text-gray-600">
-                        {formatDate(hr.start_date)}
-                      </td>
-                      <td className="px-6 py-3 text-gray-600">
-                        {formatDate(hr.end_date)}
-                      </td>
-                      <td className="px-6 py-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            hr.is_active
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
-                        >
+                      </TableCell>
+                      <TableCell>{formatDate(hr.start_date)}</TableCell>
+                      <TableCell>{formatDate(hr.end_date)}</TableCell>
+                      <TableCell>
+                        <Badge variant={hr.is_active ? 'default' : 'secondary'}>
                           {hr.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                    </tr>
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
                   ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm">
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {safePage} of {totalPages} ({sorted.length} records)
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>);
+          })() : (
+            <p className="text-center py-6 text-sm text-muted-foreground">
               No resident history yet.
-            </div>
+            </p>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Payment History */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <CreditCard size={20} className="text-gray-500" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="size-4 text-muted-foreground" />
             Payment History
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          {paymentList.length > 0 ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Month/Year
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Fee Type
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Amount
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">
-                    Payment Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[...paymentList]
-                  .sort((a, b) => {
-                    const dateA = `${a.year}-${String(a.month).padStart(2, '0')}`;
-                    const dateB = `${b.year}-${String(b.month).padStart(2, '0')}`;
-                    return dateB.localeCompare(dateA);
-                  })
-                  .map((p, idx) => {
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          {paymentList.length > 0 ? (() => {
+            const sorted = [...paymentList].sort((a, b) => {
+              const dateA = `${a.year}-${String(a.month).padStart(2, '0')}`;
+              const dateB = `${b.year}-${String(b.month).padStart(2, '0')}`;
+              return dateB.localeCompare(dateA);
+            });
+            const totalPages = Math.max(1, Math.ceil(sorted.length / PAYMENT_PER_PAGE));
+            const safePage = Math.min(paymentPage, totalPages);
+            const paginated = sorted.slice((safePage - 1) * PAYMENT_PER_PAGE, safePage * PAYMENT_PER_PAGE);
+
+            return (<>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month/Year</TableHead>
+                    <TableHead>Fee Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((p, idx) => {
                     const monthName = new Date(
                       p.year,
                       (p.month || 1) - 1
                     ).toLocaleDateString('en-US', { month: 'long' });
-                    const isPaid =
-                      p.status === 'paid';
+                    const isPaid = p.status === 'paid';
 
                     return (
-                      <tr key={p.id || idx} className="hover:bg-gray-50">
-                        <td className="px-6 py-3 text-gray-900 font-medium">
+                      <TableRow key={p.id || idx}>
+                        <TableCell className="font-medium">
                           {monthName} {p.year}
-                        </td>
-                        <td className="px-6 py-3 text-gray-600 capitalize">
+                        </TableCell>
+                        <TableCell className="capitalize">
                           {p.fee_type || '-'}
-                        </td>
-                        <td className="px-6 py-3 text-gray-900 font-medium">
+                        </TableCell>
+                        <TableCell className="font-medium">
                           {formatCurrency(p.amount || 0)}
-                        </td>
-                        <td className="px-6 py-3">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                              isPaid
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}
-                          >
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={isPaid ? 'default' : 'destructive'}>
                             {isPaid ? 'Paid' : 'Unpaid'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-gray-600">
-                          {formatDate(p.payment_date)}
-                        </td>
-                      </tr>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(p.payment_date)}</TableCell>
+                      </TableRow>
                     );
                   })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm">
-              No payment history yet.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Assign Resident Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowAssignModal(false)}
-          />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Assign Resident
-              </h2>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Select a resident to assign to this house
-              </p>
-            </div>
-
-            <form onSubmit={handleAssign}>
-              <div className="px-6 py-4 space-y-4">
-                {assignError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-                    {assignError}
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {safePage} of {totalPages} ({sorted.length} records)
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setPaymentPage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPaymentPage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
                   </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Resident <span className="text-red-500">*</span>
-                  </label>
-                  {loadingResidents ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
-                      Loading resident data...
-                    </div>
-                  ) : (
-                    <select
-                      required
-                      value={assignData.resident_id}
-                      onChange={(e) =>
-                        setAssignData({
-                          ...assignData,
-                          resident_id: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                    >
-                      <option value="">-- Select Resident --</option>
-                      {residentList.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.full_name}{' '}
-                          {r.resident_status
-                            ? `(${r.resident_status})`
-                            : ''}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={assignData.start_date}
-                    onChange={(e) =>
-                      setAssignData({
-                        ...assignData,
-                        start_date: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={assignSubmitting || loadingResidents}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {assignSubmitting ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              )}
+            </>);
+          })() : (
+            <p className="text-center py-6 text-sm text-muted-foreground">
+              No payment history yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

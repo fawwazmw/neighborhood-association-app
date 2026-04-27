@@ -31,7 +31,7 @@ class ExpenseController extends Controller
                 $query->where('category', 'like', '%' . $request->category . '%');
             }
 
-            $expenses = $query->orderBy('date', 'desc')->paginate(15);
+            $expenses = $query->orderBy('date', 'desc')->paginate(10);
 
             return response()->json([
                 'success' => true,

@@ -45,7 +45,7 @@ class PaymentController extends Controller
 
             $payments = $query->orderBy('year', 'desc')
                 ->orderBy('month', 'desc')
-                ->paginate(15);
+                ->paginate(10);
 
             return response()->json([
                 'success' => true,

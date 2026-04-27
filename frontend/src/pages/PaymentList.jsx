@@ -223,86 +223,86 @@ export default function PaymentList() {
               setGenerateResult(null);
             }}
           >
-            <Receipt className="mr-2 h-4 w-4" />
+            <Receipt />
             Generate Bills
           </Button>
-          <Button asChild>
-            <Link to="/payments/create">
-              <Plus className="mr-2 h-4 w-4" />
+          <Link to="/payments/create">
+            <Button>
+              <Plus />
               Add Payment
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Filter Bar */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Year */}
-            <div className="space-y-2">
-              <Label>Year</Label>
-              <Select value={year} onValueChange={setYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="flex flex-col sm:flex-row gap-3 py-3">
+          {/* Year */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Year</label>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Month */}
-            <div className="space-y-2">
-              <Label>Month</Label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All months" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {MONTH_NAMES.map((name, idx) => (
-                    <SelectItem key={idx + 1} value={String(idx + 1)}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Month */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Month</label>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {month === 'all' ? 'All' : MONTH_NAMES[Number(month) - 1]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {MONTH_NAMES.map((name, idx) => (
+                  <SelectItem key={idx + 1} value={String(idx + 1)}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Fee Type */}
-            <div className="space-y-2">
-              <Label>Fee Type</Label>
-              <Select value={feeType} onValueChange={setFeeType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="security">Security</SelectItem>
-                  <SelectItem value="cleaning">Cleaning</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Fee Type */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Fee Type</label>
+            <Select value={feeType} onValueChange={setFeeType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="security">Security</SelectItem>
+                <SelectItem value="cleaning">Cleaning</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Status */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Status</label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -502,8 +502,10 @@ export default function PaymentList() {
             <div className="space-y-2">
               <Label>Month</Label>
               <Select value={generateMonth} onValueChange={setGenerateMonth}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select month" />
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {MONTH_NAMES[Number(generateMonth) - 1] || 'Select month'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {MONTH_NAMES.map((name, idx) => (
@@ -518,7 +520,7 @@ export default function PaymentList() {
             <div className="space-y-2">
               <Label>Year</Label>
               <Select value={generateYear} onValueChange={setGenerateYear}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>

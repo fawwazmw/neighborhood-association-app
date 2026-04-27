@@ -32,6 +32,8 @@ export default function HouseList() {
   const [houseList, setHouseList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PER_PAGE = 12;
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -166,7 +168,7 @@ export default function HouseList() {
           <Input
             placeholder="Search house number..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="pl-9"
           />
         </div>
@@ -210,9 +212,14 @@ export default function HouseList() {
       )}
 
       {/* House Grid */}
-      {!loading && houseList.length > 0 && (
+      {!loading && houseList.length > 0 && (() => {
+        const totalPages = Math.max(1, Math.ceil(houseList.length / PER_PAGE));
+        const safePage = Math.min(currentPage, totalPages);
+        const paginatedHouses = houseList.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+
+        return (<>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {houseList.map((house) => {
+          {paginatedHouses.map((house) => {
             const isOccupied = house.occupancy_status === 'Occupied';
             const activeResident = (house.house_residents || []).find(
               (hr) => hr.is_active === true || hr.is_active === 1
@@ -265,7 +272,47 @@ export default function HouseList() {
             );
           })}
         </div>
-      )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4">
+            <p className="text-sm text-muted-foreground">
+              Page <span className="font-medium text-foreground">{safePage}</span> of{' '}
+              <span className="font-medium text-foreground">{totalPages}</span>{' '}
+              ({houseList.length} houses)
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(safePage - 1)}
+                disabled={safePage <= 1}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={page === safePage ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(safePage + 1)}
+                disabled={safePage >= totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+        </>);
+      })()}
     </div>
   );
 }

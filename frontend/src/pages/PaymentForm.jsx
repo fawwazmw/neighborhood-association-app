@@ -239,8 +239,10 @@ export default function PaymentForm() {
                     value={houseResidentId}
                     onValueChange={setHouseResidentId}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a house" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {houses.find((h) => h.id === houseResidentId)?.label || 'Select a house'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {houses.map((h) => (
@@ -259,7 +261,7 @@ export default function PaymentForm() {
                   Fee Type <span className="text-destructive">*</span>
                 </Label>
                 <Select value={feeType} onValueChange={setFeeType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select fee type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -291,8 +293,10 @@ export default function PaymentForm() {
                     Month <span className="text-destructive">*</span>
                   </Label>
                   <Select value={month} onValueChange={setMonth}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select month" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {MONTH_NAMES[Number(month) - 1] || 'Select month'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {MONTH_NAMES.map((name, idx) => (
@@ -313,8 +317,10 @@ export default function PaymentForm() {
                       Start Month <span className="text-destructive">*</span>
                     </Label>
                     <Select value={startMonth} onValueChange={setStartMonth}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Start month" />
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {MONTH_NAMES[Number(startMonth) - 1] || 'Start month'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {MONTH_NAMES.map((name, idx) => (
@@ -330,8 +336,10 @@ export default function PaymentForm() {
                       End Month <span className="text-destructive">*</span>
                     </Label>
                     <Select value={endMonth} onValueChange={setEndMonth}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="End month" />
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {MONTH_NAMES[Number(endMonth) - 1] || 'End month'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {MONTH_NAMES.map((name, idx) => (
@@ -378,7 +386,7 @@ export default function PaymentForm() {
                   Status <span className="text-destructive">*</span>
                 </Label>
                 <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>

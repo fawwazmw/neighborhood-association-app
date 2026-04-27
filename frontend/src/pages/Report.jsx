@@ -120,6 +120,8 @@ export default function Report() {
   const [detailData, setDetailData] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [errorDetail, setErrorDetail] = useState(null);
+  const [incomePage, setIncomePage] = useState(1);
+  const INCOME_PER_PAGE = 10;
 
   // ── Fetch summary ───────────────────────────────────────────────────────────
   const fetchSummary = useCallback(async () => {
@@ -158,6 +160,11 @@ export default function Report() {
     setSelectedMonth('');
     setDetailData(null);
   }, [fetchSummary]);
+
+  // Reset income pagination when month changes
+  useEffect(() => {
+    setIncomePage(1);
+  }, [selectedMonth]);
 
   // ── Fetch detail ────────────────────────────────────────────────────────────
   const fetchDetail = useCallback(async () => {
@@ -292,7 +299,10 @@ export default function Report() {
                           : value
                       }
                     />
-                    <Tooltip content={<ChartTooltip />} />
+                    <Tooltip
+                     content={<ChartTooltip />}
+                     cursor={{ fill: 'rgba(255,255,255,0.06)', radius: 4 }}
+                   />
                     <Legend wrapperStyle={{ fontSize: 13 }} iconType="circle" />
                     <Bar
                       dataKey="income"
@@ -332,8 +342,12 @@ export default function Report() {
               value={selectedMonth}
               onValueChange={(val) => setSelectedMonth(val)}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="— Select Month —" />
+              <SelectTrigger className="w-[200px]">
+                <SelectValue>
+                  {selectedMonth
+                    ? MONTH_NAMES[Number(selectedMonth) - 1]
+                    : '— Select Month —'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {MONTH_NAMES.map((name, index) => (
@@ -392,7 +406,13 @@ export default function Report() {
                   <TrendingUp size={16} />
                   Income Detail
                 </h4>
-                {detailData.income?.detail?.length > 0 ? (
+                {detailData.income?.detail?.length > 0 ? (() => {
+                  const allItems = detailData.income.detail;
+                  const totalPages = Math.max(1, Math.ceil(allItems.length / INCOME_PER_PAGE));
+                  const safePage = Math.min(incomePage, totalPages);
+                  const paginated = allItems.slice((safePage - 1) * INCOME_PER_PAGE, safePage * INCOME_PER_PAGE);
+
+                  return (<>
                   <div className="rounded-lg border">
                     <Table>
                       <TableHeader>
@@ -406,7 +426,7 @@ export default function Report() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {detailData.income.detail.map((item, idx) => (
+                        {paginated.map((item, idx) => (
                           <TableRow key={idx}>
                             <TableCell className="font-medium">
                               {item.house || '-'}
@@ -449,7 +469,19 @@ export default function Report() {
                       </TableBody>
                     </Table>
                   </div>
-                ) : (
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-3">
+                      <p className="text-sm text-muted-foreground">
+                        Page {safePage} of {totalPages} ({allItems.length} records)
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setIncomePage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIncomePage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
+                      </div>
+                    </div>
+                  )}
+                  </>);
+                })() : (
                   <p className="text-sm text-muted-foreground italic">
                     No income data for this month.
                   </p>

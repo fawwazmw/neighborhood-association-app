@@ -102,7 +102,7 @@ export default function Dashboard() {
 
       const [houseRes, paymentRes, reportRes] = await Promise.all([
         houseApi.getAll(),
-        paymentApi.getAll({ page: 1 }),
+        paymentApi.getAll({ page: 1, status: 'paid' }),
         reportApi.summary(currentYear),
       ]);
 
@@ -238,7 +238,10 @@ export default function Dashboard() {
                       : value
                   }
                 />
-                <Tooltip content={<ChartTooltip />} />
+                <Tooltip
+                  content={<ChartTooltip />}
+                  cursor={{ fill: 'rgba(255,255,255,0.06)', radius: 4 }}
+                />
                 <Legend wrapperStyle={{ fontSize: 13 }} iconType="circle" />
                 <Bar
                   dataKey="income"

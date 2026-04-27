@@ -26,7 +26,8 @@ class ResidentController extends Controller
                 $query->where('full_name', 'like', '%' . $request->search . '%');
             }
 
-            $residents = $query->paginate(15);
+            $perPage = min((int) $request->input('per_page', 10), 100);
+            $residents = $query->paginate($perPage);
 
             return response()->json([
                 'success' => true,

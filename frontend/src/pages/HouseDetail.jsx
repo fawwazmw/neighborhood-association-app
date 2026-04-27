@@ -88,6 +88,12 @@ export default function HouseDetail() {
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [removeSubmitting, setRemoveSubmitting] = useState(false);
 
+  // Pagination
+  const [historyPage, setHistoryPage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const HISTORY_PER_PAGE = 5;
+  const PAYMENT_PER_PAGE = 10;
+
   const fetchHouse = useCallback(async () => {
     try {
       setLoading(true);
@@ -214,9 +220,11 @@ export default function HouseDetail() {
               <Badge variant={isOccupied ? 'default' : 'secondary'}>
                 {isOccupied ? 'Occupied' : 'Vacant'}
               </Badge>
-              <Button variant="outline" render={<Link to={`/houses/${id}/edit`} />}>
-                Edit
-              </Button>
+              <Link to={`/houses/${id}/edit`}>
+                <Button variant="outline">
+                  Edit
+                </Button>
+              </Link>
             </div>
           </div>
         </CardHeader>
@@ -445,24 +453,26 @@ export default function HouseDetail() {
         </CardHeader>
 
         <CardContent>
-          {houseResidentHistory.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Resident Name</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...houseResidentHistory]
-                  .sort(
-                    (a, b) =>
-                      new Date(b.start_date || 0) -
-                      new Date(a.start_date || 0)
-                  )
-                  .map((hr, idx) => (
+          {houseResidentHistory.length > 0 ? (() => {
+            const sorted = [...houseResidentHistory].sort(
+              (a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0)
+            );
+            const totalPages = Math.max(1, Math.ceil(sorted.length / HISTORY_PER_PAGE));
+            const safePage = Math.min(historyPage, totalPages);
+            const paginated = sorted.slice((safePage - 1) * HISTORY_PER_PAGE, safePage * HISTORY_PER_PAGE);
+
+            return (<>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Resident Name</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>End Date</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((hr, idx) => (
                     <TableRow key={hr.id || idx}>
                       <TableCell className="font-medium">
                         {hr.resident?.full_name || '-'}
@@ -470,17 +480,27 @@ export default function HouseDetail() {
                       <TableCell>{formatDate(hr.start_date)}</TableCell>
                       <TableCell>{formatDate(hr.end_date)}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={hr.is_active ? 'default' : 'secondary'}
-                        >
+                        <Badge variant={hr.is_active ? 'default' : 'secondary'}>
                           {hr.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
-              </TableBody>
-            </Table>
-          ) : (
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {safePage} of {totalPages} ({sorted.length} records)
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => setHistoryPage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>);
+          })() : (
             <p className="text-center py-6 text-sm text-muted-foreground">
               No resident history yet.
             </p>
@@ -498,25 +518,29 @@ export default function HouseDetail() {
         </CardHeader>
 
         <CardContent>
-          {paymentList.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month/Year</TableHead>
-                  <TableHead>Fee Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...paymentList]
-                  .sort((a, b) => {
-                    const dateA = `${a.year}-${String(a.month).padStart(2, '0')}`;
-                    const dateB = `${b.year}-${String(b.month).padStart(2, '0')}`;
-                    return dateB.localeCompare(dateA);
-                  })
-                  .map((p, idx) => {
+          {paymentList.length > 0 ? (() => {
+            const sorted = [...paymentList].sort((a, b) => {
+              const dateA = `${a.year}-${String(a.month).padStart(2, '0')}`;
+              const dateB = `${b.year}-${String(b.month).padStart(2, '0')}`;
+              return dateB.localeCompare(dateA);
+            });
+            const totalPages = Math.max(1, Math.ceil(sorted.length / PAYMENT_PER_PAGE));
+            const safePage = Math.min(paymentPage, totalPages);
+            const paginated = sorted.slice((safePage - 1) * PAYMENT_PER_PAGE, safePage * PAYMENT_PER_PAGE);
+
+            return (<>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month/Year</TableHead>
+                    <TableHead>Fee Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginated.map((p, idx) => {
                     const monthName = new Date(
                       p.year,
                       (p.month || 1) - 1
@@ -543,9 +567,21 @@ export default function HouseDetail() {
                       </TableRow>
                     );
                   })}
-              </TableBody>
-            </Table>
-          ) : (
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {safePage} of {totalPages} ({sorted.length} records)
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setPaymentPage(safePage - 1)} disabled={safePage <= 1}>Previous</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPaymentPage(safePage + 1)} disabled={safePage >= totalPages}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>);
+          })() : (
             <p className="text-center py-6 text-sm text-muted-foreground">
               No payment history yet.
             </p>

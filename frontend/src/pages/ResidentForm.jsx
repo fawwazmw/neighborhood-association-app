@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, Upload, X, Loader2 } from "lucide-react";
 import { residentApi } from "@/lib/api";
 import { toast } from "sonner";
@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 
 export default function ResidentForm() {
@@ -395,28 +394,35 @@ export default function ResidentForm() {
 
             {/* Marital Status */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Checkbox
+              <Label htmlFor="marital_status">Marital Status</Label>
+              <Select
+                value={formData.marital_status ? "married" : "single"}
+                onValueChange={(value) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    marital_status: value === "married",
+                  }));
+                  if (errors.marital_status) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.marital_status;
+                      return next;
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger
                   id="marital_status"
-                  checked={formData.marital_status}
-                  onCheckedChange={(checked) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      marital_status: Boolean(checked),
-                    }));
-                    if (errors.marital_status) {
-                      setErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.marital_status;
-                        return next;
-                      });
-                    }
-                  }}
-                />
-                <Label htmlFor="marital_status" className="cursor-pointer">
-                  Married
-                </Label>
-              </div>
+                  className="w-full"
+                  aria-invalid={!!getError("marital_status")}
+                >
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="married">Married</SelectItem>
+                  <SelectItem value="single">Single</SelectItem>
+                </SelectContent>
+              </Select>
               {getError("marital_status") && (
                 <p className="text-xs text-destructive">
                   {getError("marital_status")}
@@ -425,6 +431,18 @@ export default function ResidentForm() {
             </div>
           </CardContent>
         </Card>
+
+        {/* House Assignment Note */}
+        <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 p-4">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Note:</strong> To assign this resident to a house, go to
+            the{" "}
+            <Link to="/houses" className="underline">
+              Houses
+            </Link>{" "}
+            page after saving.
+          </p>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-6">

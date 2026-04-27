@@ -305,55 +305,55 @@ export default function ExpenseList() {
 
       {/* Filter Bar */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Year */}
-            <div className="space-y-2">
-              <Label>Year</Label>
-              <Select value={year} onValueChange={setYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {YEAR_OPTIONS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="flex flex-col sm:flex-row gap-3 py-3">
+          {/* Year */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Year</label>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Month */}
-            <div className="space-y-2">
-              <Label>Month</Label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All months" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {MONTH_NAMES.map((name, idx) => (
-                    <SelectItem key={idx + 1} value={String(idx + 1)}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Month */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Month</label>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {month === 'all' ? 'All' : MONTH_NAMES[Number(month) - 1]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {MONTH_NAMES.map((name, idx) => (
+                  <SelectItem key={idx + 1} value={String(idx + 1)}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Category */}
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Search category..."
-                  className="pl-9"
-                />
-              </div>
+          {/* Category */}
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Category</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Search category..."
+                className="pl-9"
+              />
             </div>
           </div>
         </CardContent>

@@ -63,6 +63,49 @@ A web application for managing neighborhood (RT) administration — resident dat
 - Full dark/light theme toggle
 - Persisted in localStorage
 
+## Screenshots
+
+### Login Page
+![Login Page](frontend/public/loginpage.png)
+
+### Dashboard
+![Dashboard](frontend/public/dashboard.png)
+
+### Resident List
+![Resident List](frontend/public/residentlist.png)
+
+### Resident Form (Add/Edit)
+![Resident Form](frontend/public/residentform.png)
+
+### House List
+![House List](frontend/public/houselist.png)
+
+### House Detail (Resident History + Payment History)
+![House Detail](frontend/public/housedetail.png)
+
+### Payment List
+![Payment List](frontend/public/paymentlist.png)
+
+### Payment Form (Single + Bulk)
+![Payment Form](frontend/public/paymentform.png)
+
+### Generate Bills
+![Generate Bills](frontend/public/generatebills.png)
+
+### Expense List
+![Expense List](frontend/public/expenseslist.png)
+
+### Expense Form (Add/Edit)
+![Expense Form](frontend/public/expensesform.png)
+
+### Financial Report (Chart + Monthly Detail)
+![Report Page](frontend/public/reportpage.png)
+
+### Light Mode
+![Light Mode](frontend/public/lightmode.png)
+
+---
+
 ## Default Login Credentials
 
 | Field | Value |

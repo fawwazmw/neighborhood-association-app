@@ -53,7 +53,7 @@ describe('Login page', () => {
   it('renders the description text', () => {
     renderLogin()
     expect(
-      screen.getByText('Enter your credentials to access the dashboard')
+      screen.getByText('Use the credentials below to sign in')
     ).toBeInTheDocument()
   })
 

@@ -197,6 +197,14 @@ class HouseController extends Controller
                     'end_date' => Carbon::today(),
                 ]);
 
+            // Deactivate this resident's previous house assignment (if any)
+            HouseResident::where('resident_id', $request->resident_id)
+                ->where('is_active', true)
+                ->update([
+                    'is_active' => false,
+                    'end_date' => Carbon::today(),
+                ]);
+
             // Create new houseResident record
             $houseResident = HouseResident::create([
                 'house_id' => $id,

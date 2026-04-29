@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,8 +47,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center size-16 bg-primary rounded-2xl mb-4 shadow-lg">
-            <Building2 className="size-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center size-16 rounded-2xl mb-4 shadow-lg overflow-hidden">
+            <img src="/favicon.png" alt="Neighborhood Admin" className="size-16 object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
             Neighborhood Admin

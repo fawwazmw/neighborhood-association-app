@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = Carbon::now(config('app.timezone', 'UTC'));
         $currentYear = $now->year;
         $currentMonth = $now->month;
         $lastYear = $currentYear - 1;

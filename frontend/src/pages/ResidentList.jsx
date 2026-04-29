@@ -92,7 +92,7 @@ export default function ResidentList() {
     statusFilter !== "all" || maritalFilter !== "all" || houseFilter !== "all";
 
   // ── Fetch residents ───────────────────────────────────────────────────────────
-  // When filters active → fetch all (per_page=100) so client-side filtering works
+  // When filters active → fetch all so client-side filtering works
   // When no filters → normal server pagination (per_page=15)
   const fetchResidents = useCallback(async () => {
     setLoading(true);
@@ -100,7 +100,7 @@ export default function ResidentList() {
     try {
       const params = { search: debouncedSearch || "" };
       if (hasFilter) {
-        params.per_page = 100;
+        params.per_page = 500;
       } else {
         params.page = currentPage;
       }
@@ -542,7 +542,8 @@ export default function ResidentList() {
               <span className="font-medium text-foreground">
                 &quot;{deleteItem?.full_name}&quot;
               </span>
-              ? This action cannot be undone.
+              ? This will also permanently delete all their house assignment
+              history and payment records. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

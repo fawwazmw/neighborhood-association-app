@@ -228,7 +228,7 @@ export default function Layout({ children }) {
                 {collapsed && logoHovered ? (
                   <PanelLeft className="size-4 text-white" />
                 ) : (
-                  <Building2 className="size-4 text-white" />
+                  <img src="/favicon.png" alt="Logo" className="size-5 object-contain" />
                 )}
               </button>
             </TooltipTrigger>
@@ -293,8 +293,8 @@ export default function Layout({ children }) {
               className="w-64 bg-zinc-900 border-zinc-800 p-0 [&>button]:text-zinc-400 [&>button]:hover:text-white"
             >
               <div className="flex h-14 items-center gap-2 px-4">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-white/10">
-                  <Building2 className="size-4 text-white" />
+                <div className="flex size-8 items-center justify-center rounded-lg bg-white/10 overflow-hidden">
+                  <img src="/favicon.png" alt="Logo" className="size-5 object-contain" />
                 </div>
                 <span className="text-sm font-semibold text-white">
                   Neighborhood Admin

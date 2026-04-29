@@ -11,6 +11,24 @@ const api = axios.create({
 });
 
 /**
+ * 401 interceptor — redirect to login on session expiry.
+ * Skips the redirect for the login and user endpoints themselves.
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes('/login') &&
+      !error.config?.url?.includes('/user')
+    ) {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+/**
  * Fetch CSRF cookie from Sanctum before making state-changing requests.
  */
 export const getCsrfCookie = () => {
